@@ -33,6 +33,7 @@ export async function InvoicesList() {
       currency: invoices.currency,
       dueAt: invoices.dueAt,
       status: invoices.status,
+      pdfUrl: invoices.pdfUrl,
       company: clients.company,
     })
     .from(invoices)
@@ -94,6 +95,16 @@ export async function InvoicesList() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-3">
+                    {invoice.pdfUrl && (
+                      <a
+                        href={`/api/invoices/${invoice.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-neutral-500 transition hover:text-neutral-900 dark:hover:text-neutral-50"
+                      >
+                        PDF
+                      </a>
+                    )}
                     {open && (
                       <form action={markInvoicePaid}>
                         <input type="hidden" name="id" value={invoice.id} />

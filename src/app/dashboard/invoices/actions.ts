@@ -8,6 +8,14 @@ import { getOrCreateDefaultSequenceSteps } from "@/lib/default-sequence";
 import { newId } from "@/lib/ids";
 import { parseAmountToCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
+import {
+  deletePdf,
+  invoicePdfKey,
+  isStorageConfigured,
+  uploadPdf,
+} from "@/lib/storage";
+
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
 export type InvoiceFormState = { error?: string; ok?: boolean };
 
@@ -47,8 +55,28 @@ export async function createInvoice(
     .limit(1);
   if (ownedClient.length === 0) return { error: "Cliente no encontrado." };
 
-  const steps = await getOrCreateDefaultSequenceSteps(user.id);
   const invoiceId = newId("inv");
+
+  // Optional PDF: validate + upload before inserting, so a failed upload
+  // doesn't leave an invoice pointing at a missing object.
+  let pdfKey: string | null = null;
+  const pdf = formData.get("pdf");
+  if (pdf instanceof File && pdf.size > 0) {
+    if (!isStorageConfigured())
+      return {
+        error:
+          "El almacenamiento de PDF no está configurado. Completa las variables S3 en .env.local.",
+      };
+    if (pdf.type !== "application/pdf")
+      return { error: "El archivo debe ser un PDF." };
+    if (pdf.size > MAX_PDF_BYTES)
+      return { error: "El PDF no puede superar 10 MB." };
+
+    pdfKey = invoicePdfKey(user.id, invoiceId);
+    await uploadPdf(pdfKey, new Uint8Array(await pdf.arrayBuffer()));
+  }
+
+  const steps = await getOrCreateDefaultSequenceSteps(user.id);
 
   await db.insert(invoices).values({
     id: invoiceId,
@@ -61,6 +89,7 @@ export async function createInvoice(
     dueAt,
     status: "sent",
     sequenceId: null,
+    pdfUrl: pdfKey,
   });
 
   // Materialize reminders up front (the cron only reads scheduled_at <= now
@@ -125,10 +154,20 @@ export async function deleteInvoice(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  // FK onDelete cascade removes the invoice's reminders.
-  await db
+  // FK onDelete cascade removes the invoice's reminders. Capture the PDF key
+  // first so we can clean up the object after the row is gone.
+  const deleted = await db
     .delete(invoices)
-    .where(and(eq(invoices.id, id), eq(invoices.userId, user.id)));
+    .where(and(eq(invoices.id, id), eq(invoices.userId, user.id)))
+    .returning({ pdfUrl: invoices.pdfUrl });
+
+  const pdfKey = deleted[0]?.pdfUrl;
+  if (pdfKey) {
+    // Best-effort: a leftover object is harmless, don't fail the delete over it.
+    try {
+      await deletePdf(pdfKey);
+    } catch {}
+  }
 
   revalidatePath("/dashboard/invoices");
 }
