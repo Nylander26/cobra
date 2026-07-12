@@ -6,8 +6,14 @@ import {
   pgEnum,
   pgTable,
   text,
-  timestamp,
+  timestamp as pgTimestamp,
 } from "drizzle-orm/pg-core";
+
+// All instants are stored as timestamptz. Comparing a timestamp-without-tz
+// column against now() reinterprets the stored value in the session timezone,
+// which silently breaks scheduling queries (e.g. "reminders due now").
+// timestamptz keeps absolute instants unambiguous.
+const timestamp = (name: string) => pgTimestamp(name, { withTimezone: true });
 
 // ---------------------------------------------------------------------------
 // Better-Auth tables (user/session/account/verification)

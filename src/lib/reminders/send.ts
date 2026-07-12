@@ -1,0 +1,127 @@
+import { and, eq, isNull, lte } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  clients,
+  events,
+  invoices,
+  reminders,
+  sequenceSteps,
+  user,
+} from "@/db/schema";
+import { getTransport } from "@/lib/email/transport";
+import { newId } from "@/lib/ids";
+import { buildReminderVars, renderTemplate } from "@/lib/templates";
+
+export type SendSummary = {
+  transport: string;
+  due: number;
+  sent: number;
+  failed: number;
+};
+
+// Sender identity (interim): reminders go out from Cobra's address carrying the
+// freelancer's name, with reply-to set to the freelancer — until per-user domain
+// verification lets us send truly "as" their domain.
+function fromEmail(): string {
+  return process.env.REMINDER_FROM_EMAIL || "recordatorios@example.com";
+}
+
+// Processes every reminder that is due and unsent, for invoices still open.
+// Marking paid deletes pending reminders, so paid invoices never appear here;
+// the status filter is a second line of defence.
+export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
+  const transport = getTransport();
+
+  const rows = await db
+    .select({
+      reminderId: reminders.id,
+      invoiceId: invoices.id,
+      userId: invoices.userId,
+      number: invoices.number,
+      amountCents: invoices.amountCents,
+      currency: invoices.currency,
+      dueAt: invoices.dueAt,
+      company: clients.company,
+      contactName: clients.contactName,
+      billingEmail: clients.billingEmail,
+      subject: sequenceSteps.subject,
+      body: sequenceSteps.body,
+      senderName: user.senderName,
+      userName: user.name,
+      userEmail: user.email,
+    })
+    .from(reminders)
+    .innerJoin(invoices, eq(reminders.invoiceId, invoices.id))
+    .innerJoin(clients, eq(invoices.clientId, clients.id))
+    .innerJoin(sequenceSteps, eq(reminders.sequenceStepId, sequenceSteps.id))
+    .innerJoin(user, eq(invoices.userId, user.id))
+    .where(
+      and(
+        lte(reminders.scheduledAt, now),
+        isNull(reminders.sentAt),
+        eq(invoices.status, "sent"),
+      ),
+    )
+    .limit(200);
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const row of rows) {
+    const vars = buildReminderVars({
+      invoice: {
+        number: row.number,
+        amountCents: row.amountCents,
+        currency: row.currency,
+        dueAt: row.dueAt,
+      },
+      client: { company: row.company, contactName: row.contactName },
+      sender: {
+        name: row.userName,
+        senderName: row.senderName,
+        signature: null,
+      },
+      now: now.getTime(),
+    });
+
+    const from = `${row.senderName || row.userName} <${fromEmail()}>`;
+
+    try {
+      const { id } = await transport.send({
+        to: row.billingEmail,
+        from,
+        replyTo: row.userEmail,
+        subject: renderTemplate(row.subject, vars),
+        text: renderTemplate(row.body, vars),
+      });
+
+      await db
+        .update(reminders)
+        .set({ sentAt: now })
+        .where(eq(reminders.id, row.reminderId));
+
+      await db.insert(events).values({
+        id: newId("evt"),
+        userId: row.userId,
+        type: "reminder_sent",
+        invoiceId: row.invoiceId,
+        reminderId: row.reminderId,
+        payload: { transport: transport.name, messageId: id },
+      });
+      sent++;
+    } catch (err) {
+      // Leave sent_at null so the next run retries; record why.
+      await db.insert(events).values({
+        id: newId("evt"),
+        userId: row.userId,
+        type: "reminder_failed",
+        invoiceId: row.invoiceId,
+        reminderId: row.reminderId,
+        payload: { transport: transport.name, error: String(err) },
+      });
+      failed++;
+    }
+  }
+
+  return { transport: transport.name, due: rows.length, sent, failed };
+}
