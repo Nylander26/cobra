@@ -1,3 +1,7 @@
+import { Suspense } from "react";
+import { InvoicesList, InvoicesListFallback } from "./invoices-list";
+import { NewInvoice, NewInvoiceFallback } from "./new-invoice";
+
 export default function InvoicesPage() {
   return (
     <div className="space-y-6">
@@ -6,12 +10,18 @@ export default function InvoicesPage() {
           Facturas
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Registra tus facturas y Cobra programará los recordatorios.
+          Al registrar una factura, Cobra programa los recordatorios de su
+          secuencia automáticamente.
         </p>
       </div>
-      <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
-        Próximamente: alta de facturas, subida de PDF y estados.
-      </div>
+
+      <Suspense fallback={<NewInvoiceFallback />}>
+        <NewInvoice />
+      </Suspense>
+
+      <Suspense fallback={<InvoicesListFallback />}>
+        <InvoicesList />
+      </Suspense>
     </div>
   );
 }
