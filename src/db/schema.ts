@@ -97,6 +97,8 @@ export const domainStatus = pgEnum("domain_status", [
   "failed",
 ]);
 
+export const plan = pgEnum("plan", ["free", "autonomo", "estudio"]);
+
 export const clients = pgTable(
   "clients",
   {
@@ -232,3 +234,20 @@ export const events = pgTable(
   },
   (t) => [index("events_user_idx").on(t.userId, t.createdAt)],
 );
+
+// One row per user. Absence (or plan="free") means the free tier. Stripe fields
+// are filled by the checkout flow + webhook.
+export const subscriptions = pgTable("subscriptions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  plan: plan("plan").notNull().default("free"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  status: text("status"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

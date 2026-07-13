@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { clients, events, invoices, reminders } from "@/db/schema";
+import { getPlanUsage } from "@/lib/billing";
 import { getOrCreateDefaultSequenceSteps } from "@/lib/default-sequence";
 import { newId } from "@/lib/ids";
 import { parseAmountToCents } from "@/lib/money";
@@ -54,6 +55,14 @@ export async function createInvoice(
     .where(and(eq(clients.id, clientId), eq(clients.userId, user.id)))
     .limit(1);
   if (ownedClient.length === 0) return { error: "Cliente no encontrado." };
+
+  // Plan limit: a new invoice is created "sent" (active), so it counts.
+  const usage = await getPlanUsage(user.id);
+  if (!usage.canAdd) {
+    return {
+      error: `Has alcanzado el límite de ${usage.limit} facturas activas de tu plan. Marca alguna como pagada o mejora tu plan en Facturación.`,
+    };
+  }
 
   const invoiceId = newId("inv");
 
