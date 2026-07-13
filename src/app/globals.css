@@ -10,6 +10,24 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-newsreader);
+}
+
+@theme {
+  /* Paleta Cobra — "tinta y ley". Tinta verde-negra, papel frío,
+     esmeralda de banca y ámbar reservado al interés de demora. */
+  --color-tinta: #12241c;
+  --color-tinta-2: #1b342a;
+  --color-papel: #f4f5ef;
+  --color-marfil: #edf1e7;
+  --color-musgo: #8fa89a;
+  --color-cobra: #196c4c;
+  --color-cobra-oscuro: #114d36;
+  --color-verde-claro: #46a379;
+  --color-ambar: #a9781f;
+  --color-ambar-claro: #d9a84e;
+  --color-grafito: #24322b;
+  --color-linea: #dee3da;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,8 +37,18 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: #d9a84e55;
 }

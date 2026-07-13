@@ -21,13 +21,15 @@
     "next": "16.3.0-preview.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "stripe": "^22.3.1"
+    "stripe": "^22.3.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.185.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
