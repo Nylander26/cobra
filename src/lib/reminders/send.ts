@@ -149,6 +149,13 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
           logoUrl: brand.logoUrl
             ? `${APP_URL}/api/brands/${brand.id}/logo`
             : null,
+          // Datos de la factura (no del cuerpo, siempre correctos aunque el
+          // usuario reescriba la plantilla) para el bloque de referencia.
+          reference: {
+            numero: vars.numero,
+            vencimiento: vars.vencimiento,
+            importe: vars.importe,
+          },
         })
       : undefined;
 
