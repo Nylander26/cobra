@@ -69,6 +69,10 @@ export async function POST(req: Request) {
       break;
     }
 
+    // 'created' llega al abrir la suscripción (tras el checkout) y trae ya
+    // el current_period_end; 'updated' en cada cambio/renovación. Misma
+    // lógica: sincronizar plan, estado y fin de periodo desde la metadata.
+    case "customer.subscription.created":
     case "customer.subscription.updated": {
       const sub = event.data.object;
       const plan = asPlan(sub.metadata?.plan);
