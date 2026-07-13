@@ -60,6 +60,12 @@ export default function PrivacidadPage() {
           procesa Stripe. Cobra <strong>no almacena</strong> números de
           tarjeta.
         </li>
+        <li>
+          <strong>Métricas de uso del sitio:</strong> usamos Vercel Web
+          Analytics, que recoge datos agregados y anónimos de visitas{" "}
+          <strong>sin cookies ni identificadores personales</strong>. Base
+          legal: interés legítimo (art. 6.1.f RGPD).
+        </li>
       </ul>
 
       <h2>Dónde se alojan y quién nos ayuda a tratarlos</h2>
@@ -73,7 +79,8 @@ export default function PrivacidadPage() {
           (Fráncfort, eu-central-1).
         </li>
         <li>
-          <strong>Vercel</strong> — alojamiento de la aplicación.
+          <strong>Vercel</strong> — alojamiento de la aplicación y métricas de
+          uso anónimas (Web Analytics).
         </li>
         <li>
           <strong>Resend / Amazon SES</strong> — envío de correo, región UE
