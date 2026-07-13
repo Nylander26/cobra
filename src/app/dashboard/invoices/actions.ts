@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { clients, events, invoices, reminders } from "@/db/schema";
 import { getPlanUsage } from "@/lib/billing";
 import { getOrCreateDefaultSequenceSteps } from "@/lib/default-sequence";
+import { markInvoicePaidCore } from "@/lib/invoices/mark-paid";
 import { newId } from "@/lib/ids";
 import { parseAmountToCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
@@ -135,25 +136,7 @@ export async function markInvoicePaid(id: string): Promise<void> {
   const { user } = await requireSession();
   if (!id) return;
 
-  const updated = await db
-    .update(invoices)
-    .set({ status: "paid", paidAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(invoices.id, id), eq(invoices.userId, user.id)))
-    .returning({ id: invoices.id });
-  if (updated.length === 0) return;
-
-  // Stop the sequence: drop reminders that haven't been sent yet.
-  await db
-    .delete(reminders)
-    .where(and(eq(reminders.invoiceId, id), isNull(reminders.sentAt)));
-
-  await db.insert(events).values({
-    id: newId("evt"),
-    userId: user.id,
-    type: "invoice_paid",
-    invoiceId: id,
-  });
-
+  await markInvoicePaidCore(user.id, id, "dashboard");
   revalidatePath("/dashboard/invoices");
 }
 
