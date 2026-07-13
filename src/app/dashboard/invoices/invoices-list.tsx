@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, invoices } from "@/db/schema";
+import { computeLateInterest } from "@/lib/late-interest";
 import { formatCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
 import { deleteInvoice, markInvoicePaid } from "./actions";
@@ -72,6 +73,14 @@ export async function InvoicesList() {
                 : (invoice.status as Display);
             const open =
               invoice.status !== "paid" && invoice.status !== "written_off";
+            const interes =
+              display === "overdue"
+                ? computeLateInterest(
+                    invoice.amountCents,
+                    invoice.dueAt,
+                    new Date(now),
+                  )
+                : null;
             return (
               <tr key={invoice.id}>
                 <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-50">
@@ -80,8 +89,19 @@ export async function InvoicesList() {
                 <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
                   {invoice.company}
                 </td>
-                <td className="px-4 py-3 text-neutral-900 dark:text-neutral-50">
-                  {formatCents(invoice.amountCents, invoice.currency)}
+                <td className="px-4 py-3">
+                  <div className="text-neutral-900 dark:text-neutral-50">
+                    {formatCents(invoice.amountCents, invoice.currency)}
+                  </div>
+                  {interes && interes.interesCents > 0 && (
+                    <div
+                      className="text-xs text-amber-600 dark:text-amber-400"
+                      title={`Interés de demora (Ley 3/2004): ${formatCents(interes.interesCents, invoice.currency)} en ${interes.dias} días · +${formatCents(interes.compensacionCents, invoice.currency)} de compensación por costes de cobro`}
+                    >
+                      +{formatCents(interes.interesCents, invoice.currency)}{" "}
+                      demora
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
                   {dateFmt.format(invoice.dueAt)}
