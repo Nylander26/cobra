@@ -152,6 +152,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
         required
       />
 
+      {mode === "login" && (
+        <p className="text-right text-sm">
+          <Link
+            href="/forgot-password"
+            className="text-grafito/60 underline-offset-4 hover:text-cobra hover:underline"
+          >
+            ¿Has olvidado tu contraseña?
+          </Link>
+        </p>
+      )}
+
       {error && (
         <p className="text-sm text-red-600" role="alert">
           {error}

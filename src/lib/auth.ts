@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { getTransport } from "@/lib/email/transport";
@@ -33,6 +34,7 @@ export const auth = betterAuth({
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 3600, max: 5 },
+      "/request-password-reset": { window: 3600, max: 5 },
     },
   },
   // Sin email verificado no se entra: Cobra envía correos con reply-to al
@@ -42,6 +44,33 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    // Vía de recuperación: sin esto, quien olvida su contraseña (o nunca
+    // recibió el correo de verificación) queda fuera para siempre.
+    revokeSessionsOnPasswordReset: true,
+    async sendResetPassword({ user, url }) {
+      await getTransport().send({
+        to: user.email,
+        from: "Cobra <soporte@micobra.es>",
+        subject: "Restablece tu contraseña de Cobra",
+        text: `Hola ${user.name},
+
+Alguien (esperamos que tú) ha pedido restablecer la contraseña de tu cuenta de Cobra. Usa este enlace para elegir una nueva:
+
+${url}
+
+El enlace caduca en 1 hora. Si no lo has pedido tú, ignora este mensaje: tu contraseña sigue igual.
+`,
+      });
+    },
+    // Usar el enlace de reset demuestra acceso al buzón: vale también como
+    // verificación del email (rescata cuentas anteriores a la verificación
+    // obligatoria que nunca recibieron su correo de activación).
+    async onPasswordReset({ user }) {
+      await db
+        .update(schema.user)
+        .set({ emailVerified: true })
+        .where(eq(schema.user.id, user.id));
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
