@@ -1,16 +1,24 @@
+import Link from "next/link";
+import { CobraMark } from "@/components/logo";
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
+    <main className="flex min-h-dvh items-center justify-center bg-papel px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-            Cobra
-          </span>
-          <p className="mt-1 text-sm text-neutral-500">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2.5 text-tinta"
+            aria-label="Cobra — inicio"
+          >
+            <CobraMark className="h-7 w-7" />
+            <span className="font-display text-2xl">Cobra</span>
+          </Link>
+          <p className="mt-2 text-sm text-grafito/60">
             Persigue tus facturas por ti.
           </p>
         </div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { CobraMark } from "@/components/logo";
 import { Nav } from "./nav";
 import { UserMenu, UserMenuFallback } from "./user-menu";
 
@@ -13,9 +14,10 @@ export default function DashboardLayout({
       <aside className="flex w-60 flex-col gap-6 border-r border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
         <Link
           href="/dashboard"
-          className="px-3 text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50"
+          className="flex items-center gap-2 px-3 text-neutral-900 dark:text-neutral-50"
         >
-          Cobra
+          <CobraMark className="h-6 w-6" />
+          <span className="font-display text-xl">Cobra</span>
         </Link>
         <Nav />
       </aside>
