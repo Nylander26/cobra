@@ -177,6 +177,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {pending ? "…" : t.submit}
       </button>
 
+      {mode === "signup" && (
+        <p className="text-center text-xs text-grafito/60">
+          Al crear tu cuenta aceptas las{" "}
+          <Link
+            href="/legal/condiciones"
+            className="underline underline-offset-4 hover:text-cobra"
+          >
+            condiciones del servicio
+          </Link>{" "}
+          y la{" "}
+          <Link
+            href="/legal/privacidad"
+            className="underline underline-offset-4 hover:text-cobra"
+          >
+            política de privacidad
+          </Link>
+          .
+        </p>
+      )}
+
       <p className="text-center text-sm text-grafito/60">
         {t.alt}{" "}
         <Link

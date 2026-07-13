@@ -381,6 +381,24 @@ export default function Home() {
               >
                 Ley 3/2004
               </a>
+              <Link
+                href="/legal/aviso-legal"
+                className="transition hover:text-marfil"
+              >
+                Aviso legal
+              </Link>
+              <Link
+                href="/legal/privacidad"
+                className="transition hover:text-marfil"
+              >
+                Privacidad
+              </Link>
+              <Link
+                href="/legal/condiciones"
+                className="transition hover:text-marfil"
+              >
+                Condiciones
+              </Link>
             </nav>
             <p className="font-mono text-xs text-marfil/40">
               © 2026 Cobra · Hecho para autónomos en España
