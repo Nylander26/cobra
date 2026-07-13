@@ -1,10 +1,29 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { sequences, sequenceSteps } from "@/db/schema";
 import { newId } from "@/lib/ids";
 
+export type ReminderTone = "friendly" | "neutral" | "firm" | "final";
+
+export type SequenceStep = {
+  id: string;
+  offsetDays: number;
+  subject: string;
+  body: string;
+  tone: ReminderTone;
+};
+
+// Un paso entrante desde el editor: sin id = paso nuevo (se inserta).
+export type StepInput = {
+  id?: string;
+  offsetDays: number;
+  subject: string;
+  body: string;
+  tone: ReminderTone;
+};
+
 // The default reminder sequence. Copy is Spanish-professional and editable per
-// user later — templates use {{variables}} interpolated at send time (week 2):
+// user — templates use {{variables}} interpolated at send time:
 //   {{cliente}} {{numero}} {{importe}} {{vencimiento}} {{dias_retraso}}
 //   {{remitente}} {{firma}}
 export const DEFAULT_STEPS = [
@@ -70,12 +89,13 @@ Un saludo,
 
 export type DefaultStep = { id: string; offsetDays: number };
 
-// Returns the user's default sequence steps, creating the sequence + steps on
-// first use. No transaction (neon-http): a concurrent first-invoice race could
-// duplicate the default sequence — acceptable for MVP, rare in practice.
-export async function getOrCreateDefaultSequenceSteps(
+// The user's single sequence (isDefault=true), created on first use with the
+// default steps. Returns the full steps so the editor can render them. No
+// transaction (neon-http): a concurrent first-use race could duplicate the
+// sequence — acceptable for MVP, rare in practice.
+export async function getOrCreateUserSequence(
   userId: string,
-): Promise<DefaultStep[]> {
+): Promise<{ id: string; steps: SequenceStep[] }> {
   const existing = await db
     .select({ id: sequences.id })
     .from(sequences)
@@ -83,11 +103,18 @@ export async function getOrCreateDefaultSequenceSteps(
     .limit(1);
 
   if (existing.length > 0) {
-    return db
-      .select({ id: sequenceSteps.id, offsetDays: sequenceSteps.offsetDays })
+    const steps = await db
+      .select({
+        id: sequenceSteps.id,
+        offsetDays: sequenceSteps.offsetDays,
+        subject: sequenceSteps.subject,
+        body: sequenceSteps.body,
+        tone: sequenceSteps.tone,
+      })
       .from(sequenceSteps)
       .where(eq(sequenceSteps.sequenceId, existing[0].id))
       .orderBy(asc(sequenceSteps.offsetDays));
+    return { id: existing[0].id, steps };
   }
 
   const sequenceId = newId("seq");
@@ -108,5 +135,84 @@ export async function getOrCreateDefaultSequenceSteps(
   }));
   await db.insert(sequenceSteps).values(stepRows);
 
-  return stepRows.map((s) => ({ id: s.id, offsetDays: s.offsetDays }));
+  return {
+    id: sequenceId,
+    steps: stepRows.map((s) => ({
+      id: s.id,
+      offsetDays: s.offsetDays,
+      subject: s.subject,
+      body: s.body,
+      tone: s.tone,
+    })),
+  };
+}
+
+// Returns the user's default sequence steps (id + offset only), creating the
+// sequence on first use. Used by invoice creation to materialize reminders.
+export async function getOrCreateDefaultSequenceSteps(
+  userId: string,
+): Promise<DefaultStep[]> {
+  const seq = await getOrCreateUserSequence(userId);
+  return seq.steps.map((s) => ({ id: s.id, offsetDays: s.offsetDays }));
+}
+
+// Aplica el estado del editor a la secuencia del usuario mediante un diff:
+// - pasos con id existente -> UPDATE (conservan sus recordatorios pendientes;
+//   el texto se propaga porque el envío hace join en vivo; cambiar los días
+//   NO reprograma recordatorios ya materializados, solo afecta a facturas nuevas).
+// - pasos sin id -> INSERT.
+// - pasos existentes que ya no vienen -> DELETE (el cascade retira sus
+//   recordatorios pendientes: quitar un paso deja de enviar ese recordatorio).
+// Devuelve el estado final (con ids) para que el cliente sincronice.
+export async function saveUserSequenceSteps(
+  userId: string,
+  input: StepInput[],
+): Promise<SequenceStep[]> {
+  const seq = await getOrCreateUserSequence(userId);
+  const existingIds = new Set(seq.steps.map((s) => s.id));
+  const keepIds = new Set<string>();
+
+  for (const step of input) {
+    if (step.id && existingIds.has(step.id)) {
+      keepIds.add(step.id);
+      await db
+        .update(sequenceSteps)
+        .set({
+          offsetDays: step.offsetDays,
+          subject: step.subject,
+          body: step.body,
+          tone: step.tone,
+        })
+        .where(
+          and(
+            eq(sequenceSteps.id, step.id),
+            eq(sequenceSteps.sequenceId, seq.id),
+          ),
+        );
+    } else {
+      await db.insert(sequenceSteps).values({
+        id: newId("stp"),
+        sequenceId: seq.id,
+        offsetDays: step.offsetDays,
+        subject: step.subject,
+        body: step.body,
+        tone: step.tone,
+      });
+    }
+  }
+
+  const toDelete = seq.steps
+    .filter((s) => !keepIds.has(s.id))
+    .map((s) => s.id);
+  if (toDelete.length > 0) {
+    await db.delete(sequenceSteps).where(inArray(sequenceSteps.id, toDelete));
+  }
+
+  await db
+    .update(sequences)
+    .set({ updatedAt: new Date() })
+    .where(eq(sequences.id, seq.id));
+
+  const refreshed = await getOrCreateUserSequence(userId);
+  return refreshed.steps;
 }

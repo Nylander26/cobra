@@ -7,6 +7,7 @@ const links = [
   { href: "/dashboard", label: "Resumen" },
   { href: "/dashboard/clients", label: "Clientes" },
   { href: "/dashboard/invoices", label: "Facturas" },
+  { href: "/dashboard/secuencias", label: "Secuencias" },
   { href: "/dashboard/billing", label: "Plan" },
   { href: "/dashboard/soporte", label: "Soporte" },
 ];
