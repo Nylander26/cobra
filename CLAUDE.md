@@ -37,9 +37,24 @@ El flag está activo desde el inicio: **no se escribe código que luego haya que
 pnpm dev            # Turbopack dev server
 pnpm build          # build de producción (gate por-feature)
 pnpm db:generate    # generar migraciones desde src/db/schema.ts
-pnpm db:migrate     # aplicar migraciones
+pnpm db:migrate     # aplicar migraciones (a la rama dev; ver abajo)
 pnpm db:studio      # Drizzle Studio
 ```
+
+## Base de datos: dev vs producción
+
+`DATABASE_URL` local apunta a la rama **`dev`** de Neon (proyecto `cobra`,
+`odd-cherry-67545711`), no a producción. La URL de prod vive en Vercel env y,
+en local, como `DATABASE_URL_PROD`. Todo el trabajo local (dev server,
+migraciones, scripts de prueba) va contra la rama dev. Aplicar una migración
+a producción es un acto deliberado y requiere confirmación del usuario:
+
+```bash
+DATABASE_URL=$DATABASE_URL_PROD pnpm db:migrate
+```
+
+Si la rama dev diverge demasiado, se resetea desde prod:
+`npx neonctl branches reset dev --parent --project-id odd-cherry-67545711`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
