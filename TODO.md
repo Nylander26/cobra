@@ -37,10 +37,11 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
   - Opción B (AWS-native): SES Email Receiving en `eu-west-1` + receipt rule →
     S3/Lambda que reenvía al Gmail. SES debe verificar micobra.es para recepción.
 
-- **Prueba real de checkout LIVE de Stripe** con tarjeta real (la hace el
-  usuario personalmente; reembolsar tras probar).
-
 ## Hecho (histórico reciente)
+
+- ~~Prueba real de checkout LIVE de Stripe~~ → 2026-07-13: el usuario hizo el
+  checkout con tarjeta real, Estudio se activó bien vía webhook, y la
+  suscripción se canceló en trial (0 € cobrados, sin reembolso necesario).
 
 - ~~Tracking de aperturas y rebotes~~ → código completo 2026-07-13 (queda la
   activación de arriba).
