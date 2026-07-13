@@ -99,6 +99,30 @@ export const domainStatus = pgEnum("domain_status", [
 
 export const plan = pgEnum("plan", ["free", "autonomo", "estudio"]);
 
+// Una "marca" (Estudio: hasta N) = empresa + remitente. Todo usuario tiene una
+// marca por defecto (su propia identidad), creada al primer uso. Los
+// recordatorios de una factura salen con el remitente de su marca.
+export const brands = pgTable(
+  "brands",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // nombre comercial
+    senderName: text("sender_name"), // "De:" en el correo; fallback user.name
+    replyTo: text("reply_to"), // fallback user.email
+    signature: text("signature"),
+    logoUrl: text("logo_url"),
+    // Toggle por marca: texto plano "personal" vs plantilla HTML con logo.
+    htmlEmails: boolean("html_emails").notNull().default(false),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("brands_user_idx").on(t.userId)],
+);
+
 export const clients = pgTable(
   "clients",
   {
@@ -106,6 +130,10 @@ export const clients = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    // null = marca por defecto del usuario (filas antiguas y planes de 1 marca).
+    brandId: text("brand_id").references(() => brands.id, {
+      onDelete: "set null",
+    }),
     company: text("company").notNull(),
     contactName: text("contact_name"),
     billingEmail: text("billing_email").notNull(),

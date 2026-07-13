@@ -31,9 +31,15 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
   Herramienta pública (captación por SEO) que calcule el interés de demora + los
   40 € del art. 8. De momento solo está in-app (decisión del usuario).
 
-- **Dominios de envío por usuario ("en tu nombre").**
-  Verificación de dominio propio por cada usuario para enviar desde su marca.
-  Tier de pago. Hoy los recordatorios salen de `recordatorios@micobra.es`.
+- **Dominio de envío propio por marca (plan Estudio).**
+  Verificación de dominio propio para enviar desde el dominio del usuario.
+  Decidido (2026-07-13): va por marca y es exclusivo de Estudio; no se anuncia
+  en pricing hasta que exista. Hoy los recordatorios salen de
+  `recordatorios@micobra.es`.
+
+- **Marcas extra / tier gestoría.**
+  Estudio incluye 3 marcas. Si una gestoría/asesoría necesita más, precio por
+  marca adicional o un tier superior. Analizar cuando haya demanda real.
 
 ## Baja / infra
 
