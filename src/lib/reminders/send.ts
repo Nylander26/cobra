@@ -1,6 +1,7 @@
-import { and, eq, isNull, lte } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  brands,
   clients,
   events,
   invoices,
@@ -49,12 +50,17 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
       senderName: user.senderName,
       userName: user.name,
       userEmail: user.email,
+      brandName: brands.name,
+      brandSenderName: brands.senderName,
+      brandReplyTo: brands.replyTo,
+      brandSignature: brands.signature,
     })
     .from(reminders)
     .innerJoin(invoices, eq(reminders.invoiceId, invoices.id))
     .innerJoin(clients, eq(invoices.clientId, clients.id))
     .innerJoin(sequenceSteps, eq(reminders.sequenceStepId, sequenceSteps.id))
     .innerJoin(user, eq(invoices.userId, user.id))
+    .leftJoin(brands, eq(clients.brandId, brands.id))
     .where(
       and(
         lte(reminders.scheduledAt, now),
@@ -64,10 +70,48 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
     )
     .limit(200);
 
+  // Clientes sin marca explícita resuelven a la marca por defecto del usuario
+  // (una consulta para todo el lote). Usuarios sin marca por defecto todavía
+  // caen al remitente legado (user.senderName / user.name / user.email).
+  const withoutBrand = [
+    ...new Set(rows.filter((r) => r.brandName === null).map((r) => r.userId)),
+  ];
+  const defaultBrands = new Map<
+    string,
+    typeof brands.$inferSelect
+  >();
+  if (withoutBrand.length > 0) {
+    const defaults = await db
+      .select()
+      .from(brands)
+      .where(
+        and(inArray(brands.userId, withoutBrand), eq(brands.isDefault, true)),
+      );
+    for (const b of defaults) defaultBrands.set(b.userId, b);
+  }
+
   let sent = 0;
   let failed = 0;
 
   for (const row of rows) {
+    // Remitente efectivo: la marca del cliente (o la por defecto del usuario)
+    // manda; sin marca, el remitente legado del usuario.
+    const brand =
+      row.brandName !== null
+        ? {
+            name: row.brandName,
+            senderName: row.brandSenderName,
+            replyTo: row.brandReplyTo,
+            signature: row.brandSignature,
+          }
+        : (defaultBrands.get(row.userId) ?? null);
+
+    const fromName = brand
+      ? brand.senderName || brand.name
+      : row.senderName || row.userName;
+    const replyTo = brand?.replyTo || row.userEmail;
+    const signature = brand?.signature ?? null;
+
     const vars = buildReminderVars({
       invoice: {
         number: row.number,
@@ -78,19 +122,19 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
       client: { company: row.company, contactName: row.contactName },
       sender: {
         name: row.userName,
-        senderName: row.senderName,
-        signature: null,
+        senderName: fromName,
+        signature,
       },
       now: now.getTime(),
     });
 
-    const from = `${row.senderName || row.userName} <${fromEmail()}>`;
+    const from = `${fromName} <${fromEmail()}>`;
 
     try {
       const { id } = await transport.send({
         to: row.billingEmail,
         from,
-        replyTo: row.userEmail,
+        replyTo,
         subject: renderTemplate(row.subject, vars),
         text: renderTemplate(row.body, vars),
       });

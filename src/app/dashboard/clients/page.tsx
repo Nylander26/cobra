@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { BrandSelect } from "./brand-select";
 import { ClientForm } from "./client-form";
 import { ClientsList, ClientsListFallback } from "./clients-list";
 
@@ -14,7 +15,15 @@ export default function ClientsPage() {
         </p>
       </div>
 
-      <ClientForm />
+      {/* fallback null deliberado: el selector solo existe para Estudio con
+          varias marcas; para el resto no hay contenido que reservar. */}
+      <ClientForm
+        brandSelector={
+          <Suspense fallback={null}>
+            <BrandSelect />
+          </Suspense>
+        }
+      />
 
       <Suspense fallback={<ClientsListFallback />}>
         <ClientsList />

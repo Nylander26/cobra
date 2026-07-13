@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { type ReactNode, useActionState, useEffect, useRef } from "react";
 import { createClient, type ClientFormState } from "./actions";
 
 const initial: ClientFormState = {};
 
-export function ClientForm() {
+export function ClientForm({ brandSelector }: { brandSelector?: ReactNode }) {
   const [state, action, pending] = useActionState(createClient, initial);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -19,6 +19,9 @@ export function ClientForm() {
       action={action}
       className="grid gap-3 rounded-xl border border-neutral-200 bg-white p-5 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end dark:border-neutral-800 dark:bg-neutral-900"
     >
+      {/* Slot de servidor: el selector de marca (solo Estudio con >1 marca).
+          Cuando resuelve a null no aporta celda al grid. */}
+      {brandSelector}
       <Field label="Empresa" name="company" placeholder="Acme S.L." required />
       <Field label="Contacto" name="contactName" placeholder="María López" />
       <Field
