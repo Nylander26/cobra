@@ -21,6 +21,19 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  // Storage en BD: en serverless, el contador en memoria es por instancia y
+  // no frena fuerza bruta/registro masivo. Clave por defecto: IP + ruta.
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    modelName: "rateLimit",
+    window: 60,
+    max: 60,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 3600, max: 5 },
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },

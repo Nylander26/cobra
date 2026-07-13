@@ -29,6 +29,13 @@
       "when": 1783956066114,
       "tag": "0003_brief_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783962639756,
+      "tag": "0004_majestic_micromacro",
+      "breakpoints": true
     }
   ]
 }

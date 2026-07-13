@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -70,6 +71,24 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Rate limiting de Better-Auth (storage: "database"): una fila por clave
+// (IP + ruta). En serverless el storage en memoria es por instancia y no
+// frena un ataque distribuido entre instancias; la BD sí. lastRequest en ms.
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key"),
+  count: integer("count"),
+  lastRequest: bigint("last_request", { mode: "number" }),
+});
+
+// Limitador propio de ventana fija para server actions (p. ej. el formulario
+// de soporte, que dispara emails). Una fila por clave lógica ("support:userId").
+export const appRateLimits = pgTable("app_rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: timestamp("reset_at").notNull(),
 });
 
 // ---------------------------------------------------------------------------

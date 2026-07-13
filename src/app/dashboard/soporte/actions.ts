@@ -1,6 +1,7 @@
 "use server";
 
 import { getTransport } from "@/lib/email/transport";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { requireSession } from "@/lib/session";
 
 const TYPES = {
@@ -35,6 +36,14 @@ export async function sendSupportMessage(
   if (!inbox) {
     return {
       error: "El soporte no está configurado todavía. Inténtalo más tarde.",
+    };
+  }
+
+  // Cada mensaje dispara un email: 5 por hora y usuario.
+  if (!(await checkRateLimit(`support:${user.id}`, { max: 5, windowSeconds: 3600 }))) {
+    return {
+      error:
+        "Has enviado varios mensajes seguidos. Espera un rato antes de escribir de nuevo; los anteriores ya nos han llegado.",
     };
   }
 
