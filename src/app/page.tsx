@@ -367,6 +367,12 @@ export default function Home() {
               <Link href="/login" className="transition hover:text-marfil">
                 Entrar
               </Link>
+              <Link
+                href="/calculadora-intereses-demora"
+                className="transition hover:text-marfil"
+              >
+                Calculadora de intereses
+              </Link>
               <a
                 href={BOE_LEY}
                 target="_blank"
