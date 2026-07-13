@@ -5,13 +5,7 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
 
 ## Alta
 
-- **Aperturas: activar *open tracking* en el dominio `micobra.es` de Resend.**
-  Último paso del tracking (el webhook `42e96f37…` y `RESEND_WEBHOOK_SECRET` en
-  Vercel quedaron activos el 2026-07-13 con autorización del usuario; entrega,
-  rebote y queja ya se registran). Solo afecta a los correos HTML (marcas
-  Estudio y transaccionales de Cobra); el texto plano no lleva píxel. Se activa
-  en Resend → Domains → micobra.es → Open tracking (o pedírselo al agente
-  nombrándolo explícitamente).
+(vacío — el tracking quedó completo el 2026-07-13)
 
 ## Media
 
@@ -42,6 +36,10 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
 - ~~Prueba real de checkout LIVE de Stripe~~ → 2026-07-13: el usuario hizo el
   checkout con tarjeta real, Estudio se activó bien vía webhook, y la
   suscripción se canceló en trial (0 € cobrados, sin reembolso necesario).
+- ~~Open tracking~~ → 2026-07-13: subdominio `links.micobra.es` creado por el
+  usuario en Resend (solo open tracking, click tracking OFF a propósito),
+  CNAME → links1.resend-dns.com en Route53, dominio re-verificado. El tracking
+  entero (entrega/apertura/rebote/queja) queda operativo.
 
 - ~~Tracking de aperturas y rebotes~~ → código completo 2026-07-13 (queda la
   activación de arriba).
