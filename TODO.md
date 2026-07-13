@@ -5,16 +5,13 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
 
 ## Alta
 
-- **Activar el tracking de aperturas/rebotes en producción.** El código ya está
-  desplegado (2026-07-13: endpoint `/api/webhooks/resend` + columna "Correo" en
-  facturas) pero es inerte hasta completar 3 pasos de configuración externa que
-  requieren acción del usuario (o su autorización explícita al agente):
-  1. Crear el webhook en Resend → endpoint `https://micobra.es/api/webhooks/resend`,
-     eventos: `email.delivered`, `email.opened`, `email.bounced`, `email.complained`.
-  2. Añadir el signing secret (`whsec_…`) del webhook como `RESEND_WEBHOOK_SECRET`
-     en Vercel (Production) y redesplegar.
-  3. (Para aperturas) activar *open tracking* en el dominio `micobra.es` de Resend
-     — solo afecta a los correos HTML (marcas Estudio); el texto plano no lleva píxel.
+- **Aperturas: activar *open tracking* en el dominio `micobra.es` de Resend.**
+  Último paso del tracking (el webhook `42e96f37…` y `RESEND_WEBHOOK_SECRET` en
+  Vercel quedaron activos el 2026-07-13 con autorización del usuario; entrega,
+  rebote y queja ya se registran). Solo afecta a los correos HTML (marcas
+  Estudio y transaccionales de Cobra); el texto plano no lleva píxel. Se activa
+  en Resend → Domains → micobra.es → Open tracking (o pedírselo al agente
+  nombrándolo explícitamente).
 
 ## Media
 
