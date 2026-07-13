@@ -52,3 +52,43 @@ body {
 ::selection {
   background: #d9a84e55;
 }
+
+/* Transiciones de entrada. Solo con movimiento permitido: con
+   prefers-reduced-motion los elementos aparecen ya en su estado final
+   (nada de opacity:0 sin animación que los dejaría invisibles). */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes cobra-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .animate-rise {
+    animation: cobra-rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .animate-rise-2 {
+    animation: cobra-rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.08s both;
+  }
+  .animate-rise-3 {
+    animation: cobra-rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.16s both;
+  }
+
+  /* Reveal al hacer scroll (un componente cliente añade .is-visible al
+     entrar en viewport). */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}

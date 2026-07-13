@@ -42,7 +42,7 @@ export async function Overview() {
   if (invoicesTotal === 0) {
     const hasClients = clientsTotal > 0;
     return (
-      <div className="max-w-xl rounded-xl border border-neutral-200 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="animate-rise max-w-xl rounded-xl border border-neutral-200 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900">
         <CobraMark className="h-8 w-8 text-cobra" />
         <h2 className="mt-4 text-xl font-semibold text-neutral-900 dark:text-neutral-50">
           Bienvenido a Cobra
@@ -135,7 +135,7 @@ export async function Overview() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="animate-rise space-y-8">
       <div className="grid gap-4 sm:grid-cols-3">
         {stats.map((stat) => (
           <div

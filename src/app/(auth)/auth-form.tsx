@@ -60,7 +60,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-4 rounded-2xl border border-linea bg-white p-6 shadow-[0_1px_2px_rgba(18,36,28,0.06)]"
+      className="animate-rise space-y-4 rounded-2xl border border-linea bg-white p-6 shadow-[0_1px_2px_rgba(18,36,28,0.06)]"
     >
       <h1 className="text-lg font-semibold text-tinta">{t.title}</h1>
 

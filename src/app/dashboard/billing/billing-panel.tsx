@@ -18,7 +18,7 @@ export async function BillingPanel() {
       : Math.min(100, Math.round((usage.active / usage.limit) * 100));
 
   return (
-    <div className="space-y-8">
+    <div className="animate-rise space-y-8">
       <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="flex items-baseline justify-between">
           <div>

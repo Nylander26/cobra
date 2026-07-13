@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CobraMark } from "@/components/logo";
+import { Reveal } from "@/components/reveal";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { HeroWave } from "./hero-wave";
 
@@ -79,6 +80,10 @@ function Eyebrow({
 export default function Home() {
   return (
     <main className="flex min-h-dvh flex-col bg-papel text-grafito">
+      {/* Sin JS no hay IntersectionObserver: deja el contenido visible. */}
+      <noscript>
+        <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
+      </noscript>
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-tinta text-marfil">
         <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_80%_-10%,#1b342a_0%,transparent_60%)]" />
@@ -123,17 +128,19 @@ export default function Home() {
           </header>
 
           <div className="max-w-3xl pt-20 pb-36 sm:pt-28 sm:pb-44">
-            <Eyebrow claro>Para autónomos y estudios en España</Eyebrow>
-            <h1 className="mt-5 font-display text-5xl leading-[1.04] tracking-tight text-marfil sm:text-6xl md:text-7xl">
+            <div className="animate-rise">
+              <Eyebrow claro>Para autónomos y estudios en España</Eyebrow>
+            </div>
+            <h1 className="animate-rise-2 mt-5 font-display text-5xl leading-[1.04] tracking-tight text-marfil sm:text-6xl md:text-7xl">
               Cobrar no debería ser{" "}
               <em className="italic">tu&nbsp;trabajo.</em>
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-marfil/75">
+            <p className="animate-rise-3 mt-6 max-w-xl text-lg leading-relaxed text-marfil/75">
               Cobra envía recordatorios de pago automáticos, educados y en tu
               nombre hasta que la factura queda pagada. Tú no vuelves a
               escribir un email incómodo.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
+            <div className="animate-rise-3 mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href="/signup"
                 className="rounded-lg bg-marfil px-6 py-3 text-sm font-medium text-tinta transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marfil"
@@ -147,7 +154,7 @@ export default function Home() {
                 Ver cómo funciona
               </a>
             </div>
-            <p className="mt-5 font-mono text-xs text-musgo">
+            <p className="animate-rise-3 mt-5 font-mono text-xs text-musgo">
               2 facturas en seguimiento gratis · Sin tarjeta
             </p>
           </div>
@@ -156,7 +163,7 @@ export default function Home() {
 
       {/* ── Cómo funciona ────────────────────────────────────────────── */}
       <section id="como-funciona" className="scroll-mt-8">
-        <div className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
+        <Reveal className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
           <Eyebrow>Cómo funciona</Eyebrow>
           <h2 className="mt-4 max-w-2xl font-display text-3xl tracking-tight text-tinta sm:text-4xl">
             Tres pasos, y solo el primero es tuyo.
@@ -175,12 +182,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── La secuencia ─────────────────────────────────────────────── */}
       <section className="border-y border-linea bg-white/60">
-        <div className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
+        <Reveal className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
           <Eyebrow>La secuencia</Eyebrow>
           <h2 className="mt-4 max-w-2xl font-display text-3xl tracking-tight text-tinta sm:text-4xl">
             Educada al principio. Firme cuando toca.
@@ -213,12 +220,12 @@ export default function Home() {
               </article>
             ))}
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Ley 3/2004 ───────────────────────────────────────────────── */}
       <section className="bg-tinta text-marfil">
-        <div className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
+        <Reveal className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
           <div className="grid items-start gap-12 lg:grid-cols-[1.2fr_1fr]">
             <div>
               <Eyebrow claro>Ley 3/2004 — Medidas contra la morosidad</Eyebrow>
@@ -262,12 +269,12 @@ export default function Home() {
               </div>
             </dl>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Precios ──────────────────────────────────────────────────── */}
       <section id="precios" className="scroll-mt-8">
-        <div className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
+        <Reveal className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
           <Eyebrow>Precios</Eyebrow>
           <h2 className="mt-4 max-w-2xl font-display text-3xl tracking-tight text-tinta sm:text-4xl">
             Empieza gratis. Sube cuando te compense.
@@ -326,7 +333,7 @@ export default function Home() {
             Los planes de pago incluyen 14 días de prueba. Sin permanencia:
             cancela cuando quieras.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Cierre + footer ──────────────────────────────────────────── */}

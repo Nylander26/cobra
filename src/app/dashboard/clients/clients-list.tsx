@@ -29,7 +29,7 @@ export async function ClientsList() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+    <div className="animate-rise overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
       <table className="w-full min-w-[40rem] text-sm">
         <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-900">
           <tr>

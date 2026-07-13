@@ -8,7 +8,8 @@ export async function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="text-right">
+      {/* En pantallas muy estrechas solo el botón, para no saturar la barra. */}
+      <div className="hidden text-right sm:block">
         <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
           {user.name}
         </p>
