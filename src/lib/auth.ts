@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { renderCobraEmail } from "@/lib/email/cobra-template";
 import { getTransport } from "@/lib/email/transport";
 
 // En Vercel cada deployment tiene su propia URL además del dominio estable;
@@ -60,6 +61,19 @@ ${url}
 
 El enlace caduca en 1 hora. Si no lo has pedido tú, ignora este mensaje: tu contraseña sigue igual.
 `,
+        html: renderCobraEmail({
+          preheader: "Enlace para elegir una contraseña nueva. Caduca en 1 hora.",
+          eyebrow: "Recuperación de acceso",
+          heading: "Elige una contraseña nueva",
+          paragraphs: [
+            `Hola ${user.name}: alguien (esperamos que tú) ha pedido restablecer la contraseña de tu cuenta de Cobra.`,
+            "El enlace caduca en 1 hora. Al usarlo, tu email queda confirmado y se cierran las sesiones abiertas.",
+          ],
+          cta: { label: "Restablecer contraseña", url },
+          fallbackUrl: url,
+          footer:
+            "Si no lo has pedido tú, ignora este mensaje: tu contraseña sigue igual.",
+        }),
       });
     },
     // Usar el enlace de reset demuestra acceso al buzón: vale también como
@@ -88,6 +102,18 @@ ${url}
 
 Si no has creado esta cuenta, ignora este mensaje.
 `,
+        html: renderCobraEmail({
+          preheader: "Un clic y tu cuenta queda activa.",
+          eyebrow: "Bienvenido a Cobra",
+          heading: `Hola ${user.name}: confirma tu email`,
+          paragraphs: [
+            "Confirma que esta dirección es tuya y tu cuenta queda activa. Es la dirección con la que tus clientes te responderán, así que tiene que ser de verdad.",
+          ],
+          cta: { label: "Confirmar y entrar", url },
+          fallbackUrl: url,
+          footer:
+            "Recibes este correo porque se creó una cuenta en micobra.es con esta dirección. Si no has sido tú, ignóralo.",
+        }),
       });
     },
   },
