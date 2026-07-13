@@ -19,6 +19,9 @@ export type Plan = {
   activeInvoiceLimit: number | null;
   // Máximo de marcas (toda cuenta tiene al menos su marca por defecto).
   brandLimit: number;
+  // Red anti-spam: máximo de recordatorios enviados por día. Muy por encima
+  // del uso legítimo; al tope, el envío se pospone al día siguiente.
+  dailySendCap: number;
   // Puertas premium que abre este plan (fuente de verdad para el gating).
   capabilities: PlanFeature[];
   // Bullets de marketing de las cards de precios. Texto libre, no se gatea.
@@ -32,6 +35,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceCents: 0,
     activeInvoiceLimit: 2,
     brandLimit: 1,
+    dailySendCap: 20,
     capabilities: [],
     features: ["2 facturas activas en seguimiento", "Secuencia por defecto"],
   },
@@ -41,6 +45,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceCents: 1200,
     activeInvoiceLimit: 15,
     brandLimit: 1,
+    dailySendCap: 150,
     capabilities: ["custom_sequences"],
     features: ["15 facturas activas", "Secuencias personalizadas"],
   },
@@ -50,6 +55,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceCents: 2900,
     activeInvoiceLimit: null,
     brandLimit: 3,
+    dailySendCap: 600,
     capabilities: ["custom_sequences", "multi_brand", "html_branding"],
     features: [
       "Facturas ilimitadas",

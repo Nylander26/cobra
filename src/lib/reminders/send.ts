@@ -7,11 +7,14 @@ import {
   invoices,
   reminders,
   sequenceSteps,
+  subscriptions,
   user,
 } from "@/db/schema";
 import { renderBrandedEmail } from "@/lib/email/html";
 import { getTransport } from "@/lib/email/transport";
 import { newId } from "@/lib/ids";
+import { PLANS, type PlanId } from "@/lib/plans";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { buildReminderVars, renderTemplate } from "@/lib/templates";
 
 // Base pública para las URLs absolutas de los correos (logo de marca).
@@ -22,6 +25,8 @@ export type SendSummary = {
   due: number;
   sent: number;
   failed: number;
+  // Pospuestos por el tope diario del plan (se reintentan al día siguiente).
+  capped: number;
 };
 
 // Sender identity (interim): reminders go out from Cobra's address carrying the
@@ -61,6 +66,7 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
       brandSignature: brands.signature,
       brandLogoUrl: brands.logoUrl,
       brandHtmlEmails: brands.htmlEmails,
+      plan: subscriptions.plan,
     })
     .from(reminders)
     .innerJoin(invoices, eq(reminders.invoiceId, invoices.id))
@@ -68,6 +74,7 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
     .innerJoin(sequenceSteps, eq(reminders.sequenceStepId, sequenceSteps.id))
     .innerJoin(user, eq(invoices.userId, user.id))
     .leftJoin(brands, eq(clients.brandId, brands.id))
+    .leftJoin(subscriptions, eq(subscriptions.userId, invoices.userId))
     .where(
       and(
         lte(reminders.scheduledAt, now),
@@ -99,8 +106,31 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
 
   let sent = 0;
   let failed = 0;
+  let capped = 0;
 
   for (const row of rows) {
+    // Red anti-spam: tope diario de envíos por usuario según su plan. Al
+    // tope, el recordatorio se pospone (sent_at queda null y el próximo run
+    // lo reintenta, ya con la ventana renovada).
+    const plan: PlanId = row.plan ?? "free";
+    const cap = PLANS[plan].dailySendCap;
+    const allowed = await checkRateLimit(`send:${row.userId}`, {
+      max: cap,
+      windowSeconds: 24 * 60 * 60,
+    });
+    if (!allowed) {
+      capped++;
+      await db.insert(events).values({
+        id: newId("evt"),
+        userId: row.userId,
+        type: "reminder_capped",
+        invoiceId: row.invoiceId,
+        reminderId: row.reminderId,
+        payload: { plan, cap },
+      });
+      continue;
+    }
+
     // Remitente efectivo: la marca del cliente (o la por defecto del usuario)
     // manda; sin marca, el remitente legado del usuario.
     const brand =
@@ -197,5 +227,5 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
     }
   }
 
-  return { transport: transport.name, due: rows.length, sent, failed };
+  return { transport: transport.name, due: rows.length, sent, failed, capped };
 }

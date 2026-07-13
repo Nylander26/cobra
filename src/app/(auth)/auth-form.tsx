@@ -23,10 +23,22 @@ const copy = {
   },
 } as const;
 
+// Mensajes en español para los errores habituales de auth.
+function authErrorMessage(status: number, fallback?: string): string {
+  if (status === 401) return "Email o contraseña incorrectos.";
+  if (status === 403)
+    return "Tu email está sin confirmar. Te acabamos de reenviar el enlace de activación: revisa tu bandeja (y la carpeta de spam).";
+  if (status === 429)
+    return "Demasiados intentos seguidos. Espera un minuto y vuelve a probar.";
+  return fallback ?? "Algo salió mal. Inténtalo de nuevo.";
+}
+
 export function AuthForm({ mode }: { mode: Mode }) {
   const t = copy[mode];
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // signup: cuenta creada, esperando el click en el email de verificación.
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,11 +52,29 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     const result =
       mode === "signup"
-        ? await authClient.signUp.email({ email, password, name })
-        : await authClient.signIn.email({ email, password });
+        ? await authClient.signUp.email({
+            email,
+            password,
+            name,
+            callbackURL: "/dashboard",
+          })
+        : await authClient.signIn.email({
+            email,
+            password,
+            callbackURL: "/dashboard",
+          });
 
     if (result.error) {
-      setError(result.error.message ?? "Algo salió mal. Inténtalo de nuevo.");
+      setError(
+        authErrorMessage(result.error.status, result.error.message ?? undefined),
+      );
+      setPending(false);
+      return;
+    }
+
+    // El registro ya no inicia sesión: hasta que confirme el email no entra.
+    if (mode === "signup") {
+      setSentTo(email);
       setPending(false);
       return;
     }
@@ -55,6 +85,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
     const next =
       new URLSearchParams(window.location.search).get("next") ?? "/dashboard";
     window.location.href = next;
+  }
+
+  if (sentTo) {
+    return (
+      <div className="animate-rise space-y-3 rounded-2xl border border-linea bg-white p-6 shadow-[0_1px_2px_rgba(18,36,28,0.06)]">
+        <h1 className="text-lg font-semibold text-tinta">Revisa tu correo</h1>
+        <p className="text-sm text-grafito">
+          Te hemos enviado un enlace de activación a{" "}
+          <span className="font-medium text-tinta">{sentTo}</span>. Haz clic
+          para confirmar tu cuenta y entrar.
+        </p>
+        <p className="text-sm text-grafito/60">
+          ¿No llega? Mira en spam. Al intentar iniciar sesión te lo
+          reenviamos.
+        </p>
+      </div>
+    );
   }
 
   return (
