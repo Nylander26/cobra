@@ -42,8 +42,15 @@ export async function startCheckout(planInput: string): Promise<CheckoutResult> 
         },
       },
     ],
+    // La promesa del copy es "14 días de prueba sin tarjeta": no se pide
+    // método de pago al empezar. Si al acabar el trial no lo ha añadido, la
+    // suscripción se cancela sola y el webhook lo devuelve al plan Free.
+    payment_method_collection: "if_required",
     subscription_data: {
       trial_period_days: 14,
+      trial_settings: {
+        end_behavior: { missing_payment_method: "cancel" },
+      },
       metadata: { userId: user.id, plan: planId },
     },
     // El webhook (pendiente) leerá esto para activar el plan tras el pago.
