@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { IconLogout } from "@/components/icons";
 import { authClient } from "@/lib/auth-client";
 
 export function SignOutButton() {
@@ -19,9 +20,11 @@ export function SignOutButton() {
     <button
       onClick={onClick}
       disabled={pending}
-      className="text-sm text-neutral-500 transition hover:text-neutral-900 disabled:opacity-50 dark:hover:text-neutral-50"
+      title="Cerrar sesión"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-600 transition hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-400 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-50"
     >
-      {pending ? "Saliendo…" : "Salir"}
+      <IconLogout className="h-4 w-4" />
+      {pending ? "Saliendo…" : "Cerrar sesión"}
     </button>
   );
 }

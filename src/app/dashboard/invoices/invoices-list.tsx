@@ -1,10 +1,21 @@
 import { desc, eq } from "drizzle-orm";
+import { IconCheck, IconDownload, IconTrash } from "@/components/icons";
 import { db } from "@/db";
 import { clients, invoices } from "@/db/schema";
 import { computeLateInterest } from "@/lib/late-interest";
 import { formatCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
+import { ConfirmSubmit } from "../confirm-submit";
 import { deleteInvoice, markInvoicePaid } from "./actions";
+
+// Botones de acción de fila: misma forma y tamaño, hover con relleno suave.
+// Al reposo solo la acción positiva lleva color; así hay jerarquía sin romper
+// la alineación.
+const rowAction =
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-1";
+const actionNeutral = `${rowAction} text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-neutral-400 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-50`;
+const actionPaid = `${rowAction} text-cobra hover:bg-cobra/10 focus-visible:outline-cobra dark:text-verde-claro dark:hover:bg-verde-claro/10`;
+const actionDanger = `${rowAction} text-neutral-400 hover:bg-red-50 hover:text-red-600 focus-visible:outline-red-400 dark:text-neutral-500 dark:hover:bg-red-950 dark:hover:text-red-400`;
 
 const dateFmt = new Intl.DateTimeFormat("es-ES", {
   day: "2-digit",
@@ -53,8 +64,8 @@ export async function InvoicesList() {
   const now = Date.now();
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+      <table className="w-full min-w-[52rem] text-sm">
         <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-900">
           <tr>
             <th className="px-4 py-3 font-medium">Nº</th>
@@ -83,7 +94,7 @@ export async function InvoicesList() {
                 : null;
             return (
               <tr key={invoice.id}>
-                <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-50">
+                <td className="whitespace-nowrap px-4 py-3 font-medium text-neutral-900 dark:text-neutral-50">
                   {invoice.number}
                 </td>
                 <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
@@ -114,36 +125,36 @@ export async function InvoicesList() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex justify-end gap-3">
+                  <div className="flex items-center justify-end gap-1">
                     {invoice.pdfUrl && (
                       <a
                         href={`/api/invoices/${invoice.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-medium text-neutral-500 transition hover:text-neutral-900 dark:hover:text-neutral-50"
+                        className={actionNeutral}
                       >
+                        <IconDownload className="h-3.5 w-3.5" />
                         PDF
                       </a>
                     )}
                     {open && (
                       <form action={markInvoicePaid}>
                         <input type="hidden" name="id" value={invoice.id} />
-                        <button
-                          type="submit"
-                          className="text-xs font-medium text-green-700 transition hover:text-green-800 dark:text-green-400"
-                        >
+                        <button type="submit" className={actionPaid}>
+                          <IconCheck className="h-3.5 w-3.5" />
                           Marcar pagada
                         </button>
                       </form>
                     )}
                     <form action={deleteInvoice}>
                       <input type="hidden" name="id" value={invoice.id} />
-                      <button
-                        type="submit"
-                        className="text-xs text-neutral-400 transition hover:text-red-600 dark:hover:text-red-400"
+                      <ConfirmSubmit
+                        message={`¿Eliminar la factura ${invoice.number}? Esta acción no se puede deshacer.`}
+                        className={actionDanger}
                       >
+                        <IconTrash className="h-3.5 w-3.5" />
                         Eliminar
-                      </button>
+                      </ConfirmSubmit>
                     </form>
                   </div>
                 </td>

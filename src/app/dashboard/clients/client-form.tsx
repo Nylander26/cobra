@@ -31,7 +31,7 @@ export function ClientForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-9 rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-50 dark:text-neutral-900 dark:hover:bg-neutral-200"
+        className="h-9 rounded-lg bg-cobra px-4 text-sm font-medium text-white transition hover:bg-cobra-oscuro focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra disabled:opacity-50"
       >
         {pending ? "Guardando…" : "Añadir"}
       </button>

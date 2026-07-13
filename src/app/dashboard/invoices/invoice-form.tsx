@@ -69,7 +69,7 @@ export function InvoiceForm({ clients }: { clients: ClientOption[] }) {
         <button
           type="submit"
           disabled={pending}
-          className="h-9 w-full rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-50 dark:text-neutral-900 dark:hover:bg-neutral-200"
+          className="h-9 w-full rounded-lg bg-cobra px-4 text-sm font-medium text-white transition hover:bg-cobra-oscuro focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra disabled:opacity-50"
         >
           {pending ? "Guardando…" : "Registrar factura"}
         </button>

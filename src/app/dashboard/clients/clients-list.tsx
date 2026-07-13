@@ -1,8 +1,13 @@
 import { desc, eq } from "drizzle-orm";
+import { IconTrash } from "@/components/icons";
 import { db } from "@/db";
 import { clients } from "@/db/schema";
 import { requireSession } from "@/lib/session";
+import { ConfirmSubmit } from "../confirm-submit";
 import { deleteClient } from "./actions";
+
+const actionDanger =
+  "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-neutral-400 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-red-400 dark:text-neutral-500 dark:hover:bg-red-950 dark:hover:text-red-400";
 
 // Dynamic: reads session (headers) + queries the user's clients. Rendered
 // inside a <Suspense> boundary so the page shell and the form stay static.
@@ -24,8 +29,8 @@ export async function ClientsList() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+      <table className="w-full min-w-[40rem] text-sm">
         <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-900">
           <tr>
             <th className="px-4 py-3 font-medium">Empresa</th>
@@ -46,16 +51,19 @@ export async function ClientsList() {
               <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
                 {client.billingEmail}
               </td>
-              <td className="px-4 py-3 text-right">
-                <form action={deleteClient}>
-                  <input type="hidden" name="id" value={client.id} />
-                  <button
-                    type="submit"
-                    className="text-xs text-neutral-400 transition hover:text-red-600 dark:hover:text-red-400"
-                  >
-                    Eliminar
-                  </button>
-                </form>
+              <td className="px-4 py-3">
+                <div className="flex justify-end">
+                  <form action={deleteClient}>
+                    <input type="hidden" name="id" value={client.id} />
+                    <ConfirmSubmit
+                      message={`¿Eliminar a ${client.company}? Se borrarán también sus facturas y recordatorios. Esta acción no se puede deshacer.`}
+                      className={actionDanger}
+                    >
+                      <IconTrash className="h-3.5 w-3.5" />
+                      Eliminar
+                    </ConfirmSubmit>
+                  </form>
+                </div>
               </td>
             </tr>
           ))}

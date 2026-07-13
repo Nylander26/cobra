@@ -22,13 +22,13 @@ export default function DashboardLayout({
         <Nav />
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center justify-end border-b border-neutral-200 bg-white px-6 dark:border-neutral-800 dark:bg-neutral-900">
           <Suspense fallback={<UserMenuFallback />}>
             <UserMenu />
           </Suspense>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
     </div>
   );

@@ -89,7 +89,7 @@ export async function BillingPanel() {
                   <input type="hidden" name="plan" value={id} />
                   <button
                     type="submit"
-                    className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 dark:bg-neutral-50 dark:text-neutral-900 dark:hover:bg-neutral-200"
+                    className="w-full rounded-lg bg-cobra px-4 py-2 text-sm font-medium text-white transition hover:bg-cobra-oscuro focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra"
                   >
                     Empezar con {p.name}
                   </button>
