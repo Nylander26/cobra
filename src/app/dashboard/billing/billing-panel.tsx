@@ -2,6 +2,7 @@ import { getPlanUsage } from "@/lib/billing";
 import { formatCents } from "@/lib/money";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { requireSession } from "@/lib/session";
+import { startCheckout } from "./actions";
 
 // Dynamic: reads session + the user's plan/usage. Rendered in <Suspense>.
 export async function BillingPanel() {
@@ -75,20 +76,34 @@ export async function BillingPanel() {
                   <li key={f}>· {f}</li>
                 ))}
               </ul>
-              <button
-                type="button"
-                disabled
-                className="mt-4 w-full rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-500 disabled:opacity-60 dark:border-neutral-700"
-              >
-                {isCurrent ? "Plan actual" : "Mejorar (próximamente)"}
-              </button>
+              {isCurrent ? (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-4 w-full rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-500 disabled:opacity-60 dark:border-neutral-700"
+                >
+                  Plan actual
+                </button>
+              ) : p.priceCents > 0 ? (
+                <form action={startCheckout} className="mt-4">
+                  <input type="hidden" name="plan" value={id} />
+                  <button
+                    type="submit"
+                    className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 dark:bg-neutral-50 dark:text-neutral-900 dark:hover:bg-neutral-200"
+                  >
+                    Empezar con {p.name}
+                  </button>
+                </form>
+              ) : (
+                <div className="mt-4 h-[38px]" />
+              )}
             </div>
           );
         })}
       </div>
 
       <p className="text-xs text-neutral-400">
-        El pago con Stripe se activará al configurar la clave en modo test.
+        Incluye 14 días de prueba sin tarjeta. Puedes cancelar cuando quieras.
       </p>
     </div>
   );
