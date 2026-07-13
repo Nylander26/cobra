@@ -37,9 +37,6 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
 
 ## Baja / infra
 
-- **Conectar el repo de GitHub a Vercel** para deploys automáticos en cada push
-  (hoy se despliega por CLI; el conector falló al vincular por repo privado).
-
 - **Redirección `www.micobra.es` → apex** (hoy ambos sirven; para SEO conviene 301).
 
 - **Prueba real de checkout LIVE de Stripe** con tarjeta real (verificación del
