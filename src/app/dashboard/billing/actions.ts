@@ -7,9 +7,13 @@ import { isLiveKey, stripe } from "@/lib/stripe";
 
 const APP_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
-export async function startCheckout(formData: FormData): Promise<void> {
+export type CheckoutResult = { url?: string; error?: string };
+
+// Devuelve la URL de pago en vez de redirigir: el cliente la abre en una
+// pestaña nueva (window.open dentro del gesto del click) con estado de carga.
+export async function startCheckout(planInput: string): Promise<CheckoutResult> {
   const { user } = await requireSession();
-  const planId = String(formData.get("plan") ?? "") as PlanId;
+  const planId = planInput as PlanId;
   const plan = PLANS[planId];
 
   // Nada que cobrar en el plan gratuito.
@@ -17,9 +21,10 @@ export async function startCheckout(formData: FormData): Promise<void> {
 
   // Seguridad: nunca abrir un checkout LIVE mientras se desarrolla.
   if (isLiveKey() && process.env.NODE_ENV !== "production") {
-    throw new Error(
-      "Checkout en modo LIVE bloqueado en desarrollo. Configura una clave sk_test_.",
-    );
+    return {
+      error:
+        "Checkout en modo LIVE bloqueado en desarrollo. Configura una clave sk_test_.",
+    };
   }
 
   const session = await stripe().checkout.sessions.create({
@@ -47,6 +52,8 @@ export async function startCheckout(formData: FormData): Promise<void> {
     cancel_url: `${APP_URL}/dashboard/billing?checkout=cancel`,
   });
 
-  if (!session.url) throw new Error("Stripe no devolvió URL de checkout");
-  redirect(session.url);
+  if (!session.url) {
+    return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
+  }
+  return { url: session.url };
 }

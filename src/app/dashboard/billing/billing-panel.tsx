@@ -2,7 +2,7 @@ import { getPlanUsage } from "@/lib/billing";
 import { formatCents } from "@/lib/money";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { requireSession } from "@/lib/session";
-import { startCheckout } from "./actions";
+import { CheckoutButton } from "./checkout-button";
 
 // Dynamic: reads session + the user's plan/usage. Rendered in <Suspense>.
 export async function BillingPanel() {
@@ -85,15 +85,7 @@ export async function BillingPanel() {
                   Plan actual
                 </button>
               ) : p.priceCents > 0 ? (
-                <form action={startCheckout} className="mt-4">
-                  <input type="hidden" name="plan" value={id} />
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg bg-cobra px-4 py-2 text-sm font-medium text-white transition hover:bg-cobra-oscuro focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra"
-                  >
-                    Empezar con {p.name}
-                  </button>
-                </form>
+                <CheckoutButton plan={id} label={`Empezar con ${p.name}`} />
               ) : (
                 <div className="mt-4 h-[38px]" />
               )}
