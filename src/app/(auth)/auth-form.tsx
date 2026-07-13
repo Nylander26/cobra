@@ -26,8 +26,6 @@ const copy = {
 // Mensajes en español para los errores habituales de auth.
 function authErrorMessage(status: number, fallback?: string): string {
   if (status === 401) return "Email o contraseña incorrectos.";
-  if (status === 403)
-    return "Tu email está sin confirmar. Te acabamos de reenviar el enlace de activación: revisa tu bandeja (y la carpeta de spam).";
   if (status === 429)
     return "Demasiados intentos seguidos. Espera un minuto y vuelve a probar.";
   return fallback ?? "Algo salió mal. Inténtalo de nuevo.";
@@ -65,6 +63,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
           });
 
     if (result.error) {
+      // Email sin verificar: Better-Auth NO reenvía el enlace por sí solo al
+      // intentar entrar — hay que pedirlo (el servidor lo limita a 3/min).
+      if (mode === "login" && result.error.status === 403) {
+        const resend = await authClient.sendVerificationEmail({
+          email,
+          callbackURL: "/dashboard",
+        });
+        setError(
+          resend.error
+            ? "Tu email está sin confirmar y ahora mismo no se pudo reenviar el enlace. Espera un minuto y vuelve a intentarlo."
+            : "Tu email está sin confirmar. Te acabamos de enviar el enlace de activación: revisa tu bandeja (y la carpeta de spam).",
+        );
+        setPending(false);
+        return;
+      }
       setError(
         authErrorMessage(result.error.status, result.error.message ?? undefined),
       );
