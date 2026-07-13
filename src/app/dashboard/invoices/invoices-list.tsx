@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   IconCheck,
   IconDownload,
@@ -6,7 +6,7 @@ import {
   IconUndo,
 } from "@/components/icons";
 import { db } from "@/db";
-import { clients, invoices } from "@/db/schema";
+import { clients, events, invoices } from "@/db/schema";
 import { computeLateInterest } from "@/lib/late-interest";
 import { formatCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
@@ -29,6 +29,16 @@ const dateFmt = new Intl.DateTimeFormat("es-ES", {
 });
 
 type Display = "sent" | "overdue" | "paid" | "written_off" | "draft";
+
+// Último estado conocido del correo de recordatorio (vía webhook de Resend).
+// "Rebotado" y "Queja" son la señal de dirección muerta u hostil.
+const mailBadge: Record<string, { label: string; className: string; title?: string }> = {
+  reminder_sent: { label: "Enviado", className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300" },
+  email_delivered: { label: "Entregado", className: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
+  email_opened: { label: "Abierto", className: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300", title: "El cliente ha abierto el recordatorio" },
+  email_bounced: { label: "Rebotado", className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300", title: "El correo rebotó: revisa el email de facturación del cliente" },
+  email_complained: { label: "Queja", className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300", title: "El destinatario marcó el recordatorio como spam" },
+};
 
 const badge: Record<Display, { label: string; className: string }> = {
   draft: { label: "Borrador", className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300" },
@@ -58,6 +68,35 @@ export async function InvoicesList() {
     .where(eq(invoices.userId, user.id))
     .orderBy(desc(invoices.createdAt));
 
+  // Último evento de correo por factura (enviado → entregado → abierto /
+  // rebotado / queja). Una pasada en JS: los eventos vienen ya ordenados.
+  const mailEvents = await db
+    .select({
+      invoiceId: events.invoiceId,
+      type: events.type,
+      createdAt: events.createdAt,
+    })
+    .from(events)
+    .where(
+      and(
+        eq(events.userId, user.id),
+        inArray(events.type, [
+          "reminder_sent",
+          "email_delivered",
+          "email_opened",
+          "email_bounced",
+          "email_complained",
+        ]),
+      ),
+    )
+    .orderBy(desc(events.createdAt));
+  const lastMail = new Map<string, { type: string; createdAt: Date }>();
+  for (const e of mailEvents) {
+    if (e.invoiceId && !lastMail.has(e.invoiceId)) {
+      lastMail.set(e.invoiceId, { type: e.type, createdAt: e.createdAt });
+    }
+  }
+
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
@@ -78,6 +117,7 @@ export async function InvoicesList() {
             <th className="px-4 py-3 font-medium">Importe</th>
             <th className="px-4 py-3 font-medium">Vencimiento</th>
             <th className="px-4 py-3 font-medium">Estado</th>
+            <th className="px-4 py-3 font-medium">Correo</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>
@@ -128,6 +168,26 @@ export async function InvoicesList() {
                   >
                     {badge[display].label}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  {(() => {
+                    const mail = lastMail.get(invoice.id);
+                    const chip = mail ? mailBadge[mail.type] : null;
+                    if (!mail || !chip) {
+                      return <span className="text-xs text-neutral-400">—</span>;
+                    }
+                    return (
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${chip.className}`}
+                        title={
+                          chip.title ??
+                          `Último recordatorio: ${dateFmt.format(mail.createdAt)}`
+                        }
+                      >
+                        {chip.label}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
