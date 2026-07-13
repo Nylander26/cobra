@@ -3,7 +3,12 @@
 import { useActionState } from "react";
 import { IconTrash } from "@/components/icons";
 import { ActionButton } from "../action-button";
-import { type BrandFormState, deleteBrand, saveBrand } from "./actions";
+import {
+  type BrandFormState,
+  deleteBrand,
+  removeBrandLogo,
+  saveBrand,
+} from "./actions";
 
 export type BrandData = {
   id: string;
@@ -12,6 +17,8 @@ export type BrandData = {
   replyTo: string | null;
   signature: string | null;
   isDefault: boolean;
+  logoUrl: string | null;
+  htmlEmails: boolean;
 };
 
 export type BrandPlaceholders = {
@@ -106,9 +113,12 @@ export function BrandFields({
 export function BrandCard({
   brand,
   placeholders,
+  canHtml = false,
 }: {
   brand: BrandData;
   placeholders: BrandPlaceholders;
+  // Plan con html_branding (Estudio): muestra logo + toggle de correo HTML.
+  canHtml?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveBrand, initial);
 
@@ -150,6 +160,63 @@ export function BrandCard({
       </div>
 
       <BrandFields defaults={brand} placeholders={placeholders} />
+
+      {canHtml && (
+        <div className="space-y-3 rounded-lg border border-neutral-100 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-950/50">
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Correo con tu marca
+          </p>
+
+          {brand.logoUrl && (
+            <div className="flex items-center gap-3">
+              {/* data-URL del logo; se renderiza tal cual */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={brand.logoUrl}
+                alt={`Logo de ${brand.name}`}
+                className="h-10 max-w-[10rem] rounded bg-white object-contain p-1 ring-1 ring-neutral-200 dark:ring-neutral-700"
+              />
+              <ActionButton
+                action={removeBrandLogo}
+                id={brand.id}
+                label="Quitar logo"
+                title="Quitar logo"
+                className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-500 transition hover:border-red-300 hover:text-red-600 dark:border-neutral-700"
+              />
+            </div>
+          )}
+
+          <label className="block space-y-1">
+            <span className="text-xs text-neutral-500">
+              {brand.logoUrl ? "Sustituir logo" : "Logo"} (PNG, JPG o WebP,
+              máx. 300 KB)
+            </span>
+            <input
+              type="file"
+              name="logo"
+              accept="image/png,image/jpeg,image/webp"
+              className="block w-full text-sm text-neutral-600 file:mr-3 file:h-9 file:cursor-pointer file:rounded-lg file:border-0 file:bg-neutral-100 file:px-3 file:text-sm file:font-medium file:text-neutral-700 hover:file:bg-neutral-200 dark:text-neutral-400 dark:file:bg-neutral-800 dark:file:text-neutral-200 dark:hover:file:bg-neutral-700"
+            />
+          </label>
+
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              name="htmlEmails"
+              defaultChecked={brand.htmlEmails}
+              className="mt-0.5 h-4 w-4 rounded border-neutral-300 accent-cobra"
+            />
+            <span className="text-sm text-neutral-700 dark:text-neutral-300">
+              Enviar los recordatorios en HTML con esta marca
+              <span className="block text-xs text-neutral-400">
+                Desactivado, van en texto plano: parecen escritos a mano y
+                suelen cobrar mejor. Actívalo si prefieres un correo con tu
+                logo, más formal.
+              </span>
+            </span>
+          </label>
+        </div>
+      )}
 
       {state.ok && (
         <p

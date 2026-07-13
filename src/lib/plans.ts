@@ -5,7 +5,8 @@ export type PlanId = "free" | "autonomo" | "estudio";
 // on/off que cada plan abre; se van construyendo por tareas.
 export type PlanFeature =
   | "custom_sequences" // editar la secuencia de recordatorios
-  | "multi_brand"; // varias marcas (empresa + remitente + logo) bajo una cuenta
+  | "multi_brand" // varias marcas (empresa + remitente + logo) bajo una cuenta
+  | "html_branding"; // correos HTML con el logo de la marca (toggle por marca)
 // "own_domain" (dominio propio, por marca, plan Estudio) queda aplazado (ver
 // TODO.md): no se anuncia ni se gatea todavía. Se añadirá aquí cuando exista
 // la verificación de dominios.
@@ -49,8 +50,12 @@ export const PLANS: Record<PlanId, Plan> = {
     priceCents: 2900,
     activeInvoiceLimit: null,
     brandLimit: 3,
-    capabilities: ["custom_sequences", "multi_brand"],
-    features: ["Facturas ilimitadas", "Multi-marca", "Varios remitentes"],
+    capabilities: ["custom_sequences", "multi_brand", "html_branding"],
+    features: [
+      "Facturas ilimitadas",
+      "Hasta 3 marcas con su remitente",
+      "Correos HTML con tu logo",
+    ],
   },
 };
 
@@ -60,6 +65,7 @@ export const PLAN_ORDER: PlanId[] = ["free", "autonomo", "estudio"];
 export const FEATURES: Record<PlanFeature, { label: string }> = {
   custom_sequences: { label: "Secuencias personalizadas" },
   multi_brand: { label: "Multi-marca" },
+  html_branding: { label: "Correos HTML con tu logo" },
 };
 
 // ¿El plan incluye esta feature?

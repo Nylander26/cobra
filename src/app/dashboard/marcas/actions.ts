@@ -15,6 +15,11 @@ export type BrandFormState = { ok?: boolean; error?: string };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Logo: pequeño a propósito (va en cada correo); se guarda como data-URL en
+// logo_url y se sirve por /api/brands/[id]/logo.
+const MAX_LOGO_BYTES = 300 * 1024;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
 type BrandFields = {
   name: string;
   senderName: string | null;
@@ -64,15 +69,46 @@ export async function saveBrand(
   const parsed = parseBrandFields(formData);
   if ("error" in parsed) return parsed;
 
+  // Branding (logo + toggle HTML): solo si el plan lo incluye — la UI no
+  // muestra estos campos a los demás, esto es la barrera real.
+  const branding: { logoUrl?: string; htmlEmails?: boolean } = {};
+  if (await userHasFeature(user.id, "html_branding")) {
+    branding.htmlEmails = formData.get("htmlEmails") === "on";
+
+    const logo = formData.get("logo");
+    if (logo instanceof File && logo.size > 0) {
+      if (!LOGO_TYPES.includes(logo.type)) {
+        return { error: "El logo debe ser PNG, JPG o WebP." };
+      }
+      if (logo.size > MAX_LOGO_BYTES) {
+        return { error: "El logo no puede superar 300 KB." };
+      }
+      const b64 = Buffer.from(await logo.arrayBuffer()).toString("base64");
+      branding.logoUrl = `data:${logo.type};base64,${b64}`;
+    }
+  }
+
   const updated = await db
     .update(brands)
-    .set({ ...parsed.fields, updatedAt: new Date() })
+    .set({ ...parsed.fields, ...branding, updatedAt: new Date() })
     .where(and(eq(brands.id, id), eq(brands.userId, user.id)))
     .returning({ id: brands.id });
   if (updated.length === 0) return { error: "Marca no encontrada." };
 
   revalidatePath("/dashboard/marcas");
   return { ok: true };
+}
+
+export async function removeBrandLogo(id: string): Promise<void> {
+  const { user } = await requireSession();
+  if (!id) return;
+
+  await db
+    .update(brands)
+    .set({ logoUrl: null, updatedAt: new Date() })
+    .where(and(eq(brands.id, id), eq(brands.userId, user.id)));
+
+  revalidatePath("/dashboard/marcas");
 }
 
 export async function createBrand(

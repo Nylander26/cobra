@@ -4,6 +4,8 @@ export type SendEmailInput = {
   replyTo?: string;
   subject: string;
   text: string;
+  // Alternativa HTML opcional (marcas con branding); text va siempre.
+  html?: string;
 };
 
 export interface EmailTransport {
@@ -41,6 +43,7 @@ class ResendTransport implements EmailTransport {
         reply_to: input.replyTo,
         subject: input.subject,
         text: input.text,
+        html: input.html,
       }),
     });
 

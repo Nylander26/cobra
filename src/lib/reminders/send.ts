@@ -9,9 +9,13 @@ import {
   sequenceSteps,
   user,
 } from "@/db/schema";
+import { renderBrandedEmail } from "@/lib/email/html";
 import { getTransport } from "@/lib/email/transport";
 import { newId } from "@/lib/ids";
 import { buildReminderVars, renderTemplate } from "@/lib/templates";
+
+// Base pública para las URLs absolutas de los correos (logo de marca).
+const APP_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
 export type SendSummary = {
   transport: string;
@@ -50,10 +54,13 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
       senderName: user.senderName,
       userName: user.name,
       userEmail: user.email,
+      brandId: brands.id,
       brandName: brands.name,
       brandSenderName: brands.senderName,
       brandReplyTo: brands.replyTo,
       brandSignature: brands.signature,
+      brandLogoUrl: brands.logoUrl,
+      brandHtmlEmails: brands.htmlEmails,
     })
     .from(reminders)
     .innerJoin(invoices, eq(reminders.invoiceId, invoices.id))
@@ -99,10 +106,13 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
     const brand =
       row.brandName !== null
         ? {
+            id: row.brandId as string,
             name: row.brandName,
             senderName: row.brandSenderName,
             replyTo: row.brandReplyTo,
             signature: row.brandSignature,
+            logoUrl: row.brandLogoUrl,
+            htmlEmails: row.brandHtmlEmails ?? false,
           }
         : (defaultBrands.get(row.userId) ?? null);
 
@@ -129,6 +139,18 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
     });
 
     const from = `${fromName} <${fromEmail()}>`;
+    const text = renderTemplate(row.body, vars);
+
+    // HTML solo si la marca lo activó (Estudio); el texto plano va siempre.
+    const html = brand?.htmlEmails
+      ? renderBrandedEmail({
+          bodyText: text,
+          brandName: brand.name,
+          logoUrl: brand.logoUrl
+            ? `${APP_URL}/api/brands/${brand.id}/logo`
+            : null,
+        })
+      : undefined;
 
     try {
       const { id } = await transport.send({
@@ -136,7 +158,8 @@ export async function sendDueReminders(now = new Date()): Promise<SendSummary> {
         from,
         replyTo,
         subject: renderTemplate(row.subject, vars),
-        text: renderTemplate(row.body, vars),
+        text,
+        html,
       });
 
       await db

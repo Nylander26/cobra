@@ -17,6 +17,7 @@ export async function BrandsSection() {
 
   const limit = PLANS[plan].brandLimit;
   const canMulti = planHas(plan, "multi_brand");
+  const canHtml = planHas(plan, "html_branding");
   const placeholders = { senderName: user.name, replyTo: user.email };
 
   return (
@@ -37,8 +38,11 @@ export async function BrandsSection() {
             replyTo: b.replyTo,
             signature: b.signature,
             isDefault: b.isDefault,
+            logoUrl: b.logoUrl,
+            htmlEmails: b.htmlEmails,
           }}
           placeholders={placeholders}
+          canHtml={canHtml}
         />
       ))}
 
