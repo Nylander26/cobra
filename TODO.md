@@ -9,6 +9,11 @@ Ordenado por prioridad. Al aplazar algo nuevo, añádelo aquí.
 
 ## Media
 
+- **Completar el aviso legal con NIF y domicilio del titular** (obligatorios
+  por LSSI art. 10) y **confirmar el tratamiento del IVA** de los precios con
+  el gestor. Decisión del usuario (2026-07-13): esperar a que haya tráfico
+  antes de publicar sus datos. Editar `src/app/legal/aviso-legal/page.tsx`.
+
 - **Dominio de envío propio por marca (plan Estudio).**
   Verificación de dominio propio para enviar desde el dominio del usuario.
   Decidido (2026-07-13): va por marca y es exclusivo de Estudio; no se anuncia
