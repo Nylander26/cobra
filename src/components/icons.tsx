@@ -63,3 +63,22 @@ export function IconLogout({ className }: IconProps) {
     </Svg>
   );
 }
+
+export function IconUndo({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h11a5 5 0 0 1 0 10h-1" />
+    </Svg>
+  );
+}
+
+// Spinner: hereda color (currentColor) y gira. Para estados de carga.
+export function Spinner({ className }: IconProps) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${className ?? "h-4 w-4"}`}
+    />
+  );
+}

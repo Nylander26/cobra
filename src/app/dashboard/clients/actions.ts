@@ -37,9 +37,8 @@ export async function createClient(
   return { ok: true };
 }
 
-export async function deleteClient(formData: FormData): Promise<void> {
+export async function deleteClient(id: string): Promise<void> {
   const { user } = await requireSession();
-  const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   // Scope by userId so one user can't delete another's client.

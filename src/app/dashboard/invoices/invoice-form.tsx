@@ -61,7 +61,7 @@ export function InvoiceForm({ clients }: { clients: ClientOption[] }) {
           name="pdf"
           type="file"
           accept="application/pdf"
-          className="block w-full text-sm text-neutral-600 file:mr-3 file:h-9 file:cursor-pointer file:rounded-lg file:border-0 file:bg-neutral-100 file:px-3 file:text-sm file:font-medium file:text-neutral-700 hover:file:bg-neutral-200 dark:text-neutral-400 dark:file:bg-neutral-800 dark:file:text-neutral-200"
+          className="block w-full text-sm text-neutral-600 file:mr-3 file:h-9 file:cursor-pointer file:rounded-lg file:border-0 file:bg-neutral-100 file:px-3 file:text-sm file:font-medium file:text-neutral-700 hover:file:bg-neutral-200 dark:text-neutral-400 dark:file:bg-neutral-800 dark:file:text-neutral-200 dark:hover:file:bg-neutral-700"
         />
       </label>
 

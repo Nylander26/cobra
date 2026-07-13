@@ -3,7 +3,7 @@ import { IconTrash } from "@/components/icons";
 import { db } from "@/db";
 import { clients } from "@/db/schema";
 import { requireSession } from "@/lib/session";
-import { ConfirmSubmit } from "../confirm-submit";
+import { ActionButton } from "../action-button";
 import { deleteClient } from "./actions";
 
 const actionDanger =
@@ -53,16 +53,19 @@ export async function ClientsList() {
               </td>
               <td className="px-4 py-3">
                 <div className="flex justify-end">
-                  <form action={deleteClient}>
-                    <input type="hidden" name="id" value={client.id} />
-                    <ConfirmSubmit
-                      message={`¿Eliminar a ${client.company}? Se borrarán también sus facturas y recordatorios. Esta acción no se puede deshacer.`}
-                      className={actionDanger}
-                    >
-                      <IconTrash className="h-3.5 w-3.5" />
-                      Eliminar
-                    </ConfirmSubmit>
-                  </form>
+                  <ActionButton
+                    action={deleteClient}
+                    id={client.id}
+                    className={actionDanger}
+                    icon={<IconTrash className="h-3.5 w-3.5" />}
+                    label="Eliminar"
+                    confirm={{
+                      title: "Eliminar cliente",
+                      message: `¿Eliminar a ${client.company}? Se borrarán también sus facturas y recordatorios. Esta acción no se puede deshacer.`,
+                      confirmLabel: "Eliminar",
+                      tone: "danger",
+                    }}
+                  />
                 </div>
               </td>
             </tr>

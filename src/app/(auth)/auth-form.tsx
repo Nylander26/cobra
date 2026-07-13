@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
@@ -26,7 +25,6 @@ const copy = {
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const t = copy[mode];
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,10 +49,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
       return;
     }
 
+    // Navegación dura para que los server components vean la sesión recién
+    // creada y el estado del cliente arranque limpio. `pending` sigue activo
+    // hasta que la página se descarga (botón deshabilitado durante el salto).
     const next =
       new URLSearchParams(window.location.search).get("next") ?? "/dashboard";
-    router.push(next);
-    router.refresh();
+    window.location.href = next;
   }
 
   return (

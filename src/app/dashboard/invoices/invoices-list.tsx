@@ -1,12 +1,17 @@
 import { desc, eq } from "drizzle-orm";
-import { IconCheck, IconDownload, IconTrash } from "@/components/icons";
+import {
+  IconCheck,
+  IconDownload,
+  IconTrash,
+  IconUndo,
+} from "@/components/icons";
 import { db } from "@/db";
 import { clients, invoices } from "@/db/schema";
 import { computeLateInterest } from "@/lib/late-interest";
 import { formatCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
-import { ConfirmSubmit } from "../confirm-submit";
-import { deleteInvoice, markInvoicePaid } from "./actions";
+import { ActionButton } from "../action-button";
+import { deleteInvoice, markInvoicePaid, unmarkInvoicePaid } from "./actions";
 
 // Botones de acción de fila: misma forma y tamaño, hover con relleno suave.
 // Al reposo solo la acción positiva lleva color; así hay jerarquía sin romper
@@ -137,25 +142,43 @@ export async function InvoicesList() {
                         PDF
                       </a>
                     )}
-                    {open && (
-                      <form action={markInvoicePaid}>
-                        <input type="hidden" name="id" value={invoice.id} />
-                        <button type="submit" className={actionPaid}>
-                          <IconCheck className="h-3.5 w-3.5" />
-                          Marcar pagada
-                        </button>
-                      </form>
-                    )}
-                    <form action={deleteInvoice}>
-                      <input type="hidden" name="id" value={invoice.id} />
-                      <ConfirmSubmit
-                        message={`¿Eliminar la factura ${invoice.number}? Esta acción no se puede deshacer.`}
-                        className={actionDanger}
-                      >
-                        <IconTrash className="h-3.5 w-3.5" />
-                        Eliminar
-                      </ConfirmSubmit>
-                    </form>
+                    {open ? (
+                      <ActionButton
+                        action={markInvoicePaid}
+                        id={invoice.id}
+                        className={actionPaid}
+                        icon={<IconCheck className="h-3.5 w-3.5" />}
+                        label="Marcar pagada"
+                        confirm={{
+                          title: "Marcar como pagada",
+                          message: `¿Marcar la factura ${invoice.number} como pagada? Se detendrán sus recordatorios. Podrás revertirlo.`,
+                          confirmLabel: "Marcar pagada",
+                          tone: "primary",
+                        }}
+                      />
+                    ) : invoice.status === "paid" ? (
+                      <ActionButton
+                        action={unmarkInvoicePaid}
+                        id={invoice.id}
+                        className={actionNeutral}
+                        icon={<IconUndo className="h-3.5 w-3.5" />}
+                        label="Marcar pendiente"
+                        title="Revertir el estado pagada y reanudar los recordatorios"
+                      />
+                    ) : null}
+                    <ActionButton
+                      action={deleteInvoice}
+                      id={invoice.id}
+                      className={actionDanger}
+                      icon={<IconTrash className="h-3.5 w-3.5" />}
+                      label="Eliminar"
+                      confirm={{
+                        title: "Eliminar factura",
+                        message: `¿Eliminar la factura ${invoice.number}? Esta acción no se puede deshacer.`,
+                        confirmLabel: "Eliminar",
+                        tone: "danger",
+                      }}
+                    />
                   </div>
                 </td>
               </tr>

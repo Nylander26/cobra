@@ -131,9 +131,8 @@ export async function createInvoice(
   return { ok: true };
 }
 
-export async function markInvoicePaid(formData: FormData): Promise<void> {
+export async function markInvoicePaid(id: string): Promise<void> {
   const { user } = await requireSession();
-  const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const updated = await db
@@ -158,9 +157,57 @@ export async function markInvoicePaid(formData: FormData): Promise<void> {
   revalidatePath("/dashboard/invoices");
 }
 
-export async function deleteInvoice(formData: FormData): Promise<void> {
+// Deshacer "marcar pagada" (para un miss-click): vuelve a 'sent', limpia
+// paidAt y re-arma los recordatorios futuros que aún no existen (los ya
+// enviados se conservan; no se duplican).
+export async function unmarkInvoicePaid(id: string): Promise<void> {
   const { user } = await requireSession();
-  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const rows = await db
+    .select({ dueAt: invoices.dueAt, status: invoices.status })
+    .from(invoices)
+    .where(and(eq(invoices.id, id), eq(invoices.userId, user.id)))
+    .limit(1);
+  if (rows.length === 0 || rows[0].status !== "paid") return;
+  const { dueAt } = rows[0];
+
+  await db
+    .update(invoices)
+    .set({ status: "sent", paidAt: null, updatedAt: new Date() })
+    .where(and(eq(invoices.id, id), eq(invoices.userId, user.id)));
+
+  // Re-materializar los pasos futuros que no tengan ya un recordatorio.
+  const steps = await getOrCreateDefaultSequenceSteps(user.id);
+  const existing = await db
+    .select({ stepId: reminders.sequenceStepId })
+    .from(reminders)
+    .where(eq(reminders.invoiceId, id));
+  const has = new Set(existing.map((e) => e.stepId));
+
+  const now = Date.now();
+  const toArm = steps
+    .map((step) => ({
+      id: newId("rem"),
+      invoiceId: id,
+      sequenceStepId: step.id,
+      scheduledAt: new Date(dueAt.getTime() + step.offsetDays * DAY_MS),
+    }))
+    .filter((r) => r.scheduledAt.getTime() > now && !has.has(r.sequenceStepId));
+  if (toArm.length > 0) await db.insert(reminders).values(toArm);
+
+  await db.insert(events).values({
+    id: newId("evt"),
+    userId: user.id,
+    type: "invoice_unpaid",
+    invoiceId: id,
+  });
+
+  revalidatePath("/dashboard/invoices");
+}
+
+export async function deleteInvoice(id: string): Promise<void> {
+  const { user } = await requireSession();
   if (!id) return;
 
   // FK onDelete cascade removes the invoice's reminders. Capture the PDF key

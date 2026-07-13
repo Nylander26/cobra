@@ -1,19 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { IconLogout } from "@/components/icons";
 import { authClient } from "@/lib/auth-client";
 
 export function SignOutButton() {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function onClick() {
     setPending(true);
     await authClient.signOut();
-    router.push("/login");
-    router.refresh();
+    // Navegación dura: descarta el estado del cliente de auth en memoria. Con
+    // router.push el siguiente signIn podía quedarse colgado y había que
+    // recargar a mano para volver a entrar.
+    window.location.href = "/login";
   }
 
   return (
