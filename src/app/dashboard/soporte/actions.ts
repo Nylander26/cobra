@@ -1,6 +1,9 @@
 "use server";
 
+import { getUserPlan } from "@/lib/billing";
+import { buildSupportEmail } from "@/lib/email/internal";
 import { getTransport } from "@/lib/email/transport";
+import { PLANS } from "@/lib/plans";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireSession } from "@/lib/session";
 
@@ -47,13 +50,15 @@ export async function sendSupportMessage(
     };
   }
 
-  const text = [
-    `Tipo: ${type}`,
-    `De: ${user.name} <${user.email}>`,
-    `Usuario: ${user.id}`,
-    "",
+  const plan = await getUserPlan(user.id);
+  const email = buildSupportEmail({
+    type,
+    userName: user.name,
+    userEmail: user.email,
+    userId: user.id,
+    planName: PLANS[plan].name,
     message,
-  ].join("\n");
+  });
 
   try {
     await getTransport().send({
@@ -61,8 +66,9 @@ export async function sendSupportMessage(
       from: SUPPORT_FROM,
       // Responder al email va directo al usuario que escribió.
       replyTo: user.email,
-      subject: `[Cobra soporte] ${type} — ${user.name}`,
-      text,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
     });
   } catch {
     return { error: "No se pudo enviar. Inténtalo de nuevo en un momento." };
