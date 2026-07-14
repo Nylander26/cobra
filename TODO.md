@@ -40,6 +40,27 @@ ya escalan por plan; esto son capabilities nuevas.
 
 ### Estudio (justificar los 29 €; público: estudios y gestorías)
 
+- **Personalización estética del correo HTML (paleta de colores).** _(añadido
+  2026-07-14 al construir la vista previa de correos)_ La vista previa ya
+  existe para Autónomo y Estudio (`/dashboard/secuencias`, capability
+  `email_preview`); Estudio además podrá personalizar la estética del correo
+  con marca.
+  - **Diseño técnico:**
+    - Paletas curadas (4–6: papel cálido actual, tinta fría, oscuro sobrio…)
+      en vez de color picker libre: garantizan contraste y rendering
+      consistente en clientes de correo. Opcional más adelante: acento
+      derivado del logo.
+    - Los tokens ya están concentrados en `src/lib/email/html.ts`
+      (`PAPER`/`SHEET`/`INK`/`MUTED`/`RULE`): parametrizar
+      `renderBrandedEmail()` con la paleta de la marca.
+    - Schema: columna `emailTheme` en `brands` (id de paleta; default la
+      actual).
+    - UI: selector de paleta en la tarjeta de marca (`/dashboard/marcas`),
+      con el modal de vista previa (`step-preview.tsx`) como lienzo para ver
+      el cambio en vivo.
+    - Gating: capability nueva `email_theming`, solo Estudio (la vista previa
+      se queda en `email_preview` para Autónomo y Estudio).
+
 - **Expediente de reclamación por factura.** Exportar un PDF con la línea
   temporal completa de una factura: recordatorios enviados (contenido, fecha),
   entregas/aperturas/rebotes del tracking, e intereses de demora calculados

@@ -31,8 +31,9 @@ export type SendSummary = {
 
 // Sender identity (interim): reminders go out from Cobra's address carrying the
 // freelancer's name, with reply-to set to the freelancer — until per-user domain
-// verification lets us send truly "as" their domain.
-function fromEmail(): string {
+// verification lets us send truly "as" their domain. Exported so the email
+// preview shows the same From address the real send will use.
+export function fromEmail(): string {
   return process.env.REMINDER_FROM_EMAIL || "recordatorios@example.com";
 }
 

@@ -1,13 +1,16 @@
 import { FeatureLock } from "@/components/feature-lock";
 import { getUserPlan } from "@/lib/billing";
+import { getOrCreateDefaultBrand, getUserBrands } from "@/lib/brands";
 import {
   DEFAULT_STEPS,
   getOrCreateUserSequence,
   type ReminderTone,
 } from "@/lib/default-sequence";
 import { planHas } from "@/lib/plans";
+import { fromEmail } from "@/lib/reminders/send";
 import { requireSession } from "@/lib/session";
 import { SequenceEditor } from "./sequence-editor";
+import type { EmailPreviewData } from "./step-preview";
 
 const TONE_LABEL: Record<ReminderTone, string> = {
   friendly: "Amistoso",
@@ -31,7 +34,31 @@ export async function SequenceSection() {
 
   if (planHas(plan, "custom_sequences")) {
     const seq = await getOrCreateUserSequence(user.id);
-    return <SequenceEditor initialSteps={seq.steps} />;
+
+    // Vista previa (email_preview: Autónomo y Estudio): se previsualiza con
+    // las marcas reales del usuario, replicando la resolución de remitente
+    // del envío (send.ts): senderName || nombre de marca, replyTo || email.
+    let preview: EmailPreviewData | null = null;
+    if (planHas(plan, "email_preview")) {
+      let userBrands = await getUserBrands(user.id);
+      if (userBrands.length === 0) {
+        userBrands = [await getOrCreateDefaultBrand(user.id, user.name)];
+      }
+      preview = {
+        fromAddress: fromEmail(),
+        brands: userBrands.map((b) => ({
+          id: b.id,
+          name: b.name,
+          fromName: b.senderName || b.name,
+          replyTo: b.replyTo || user.email,
+          signature: b.signature,
+          logoUrl: b.logoUrl ? `/api/brands/${b.id}/logo` : null,
+          htmlEmails: b.htmlEmails,
+        })),
+      };
+    }
+
+    return <SequenceEditor initialSteps={seq.steps} preview={preview} />;
   }
 
   // Free: vista de solo lectura de la secuencia por defecto + upsell. No se

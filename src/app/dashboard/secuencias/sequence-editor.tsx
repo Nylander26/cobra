@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { IconTrash } from "@/components/icons";
 import type { ReminderTone, SequenceStep } from "@/lib/default-sequence";
 import { saveSequence, type SequenceState } from "./actions";
+import { type EmailPreviewData, StepPreviewButton } from "./step-preview";
 
 const TONE_OPTIONS: { value: ReminderTone; label: string }[] = [
   { value: "friendly", label: "Amistoso" },
@@ -47,8 +48,11 @@ const initial: SequenceState = {};
 
 export function SequenceEditor({
   initialSteps,
+  preview,
 }: {
   initialSteps: SequenceStep[];
+  // Con datos, cada paso ofrece "Vista previa" (planes con email_preview).
+  preview?: EmailPreviewData | null;
 }) {
   const [steps, setSteps] = useState<EditStep[]>(initialSteps);
   const [state, action, pending] = useActionState(saveSequence, initial);
@@ -134,6 +138,7 @@ export function SequenceEditor({
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                {preview && <StepPreviewButton step={step} preview={preview} />}
                 <select
                   value={step.tone}
                   onChange={(e) =>

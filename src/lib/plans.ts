@@ -5,6 +5,7 @@ export type PlanId = "free" | "autonomo" | "estudio";
 // on/off que cada plan abre; se van construyendo por tareas.
 export type PlanFeature =
   | "custom_sequences" // editar la secuencia de recordatorios
+  | "email_preview" // ver el correo tal y como le llegará al cliente
   | "multi_brand" // varias marcas (empresa + remitente + logo) bajo una cuenta
   | "html_branding"; // correos HTML con el logo de la marca (toggle por marca)
 // "own_domain" (dominio propio, por marca, plan Estudio) queda aplazado (ver
@@ -46,8 +47,12 @@ export const PLANS: Record<PlanId, Plan> = {
     activeInvoiceLimit: 15,
     brandLimit: 1,
     dailySendCap: 150,
-    capabilities: ["custom_sequences"],
-    features: ["15 facturas activas", "Secuencias personalizadas"],
+    capabilities: ["custom_sequences", "email_preview"],
+    features: [
+      "15 facturas activas",
+      "Secuencias personalizadas",
+      "Vista previa de los correos",
+    ],
   },
   estudio: {
     id: "estudio",
@@ -56,7 +61,12 @@ export const PLANS: Record<PlanId, Plan> = {
     activeInvoiceLimit: null,
     brandLimit: 3,
     dailySendCap: 600,
-    capabilities: ["custom_sequences", "multi_brand", "html_branding"],
+    capabilities: [
+      "custom_sequences",
+      "email_preview",
+      "multi_brand",
+      "html_branding",
+    ],
     features: [
       "Facturas ilimitadas",
       "Hasta 3 marcas con su remitente",
@@ -70,6 +80,7 @@ export const PLAN_ORDER: PlanId[] = ["free", "autonomo", "estudio"];
 // Metadatos legibles por feature (copy de los candados/upsell).
 export const FEATURES: Record<PlanFeature, { label: string }> = {
   custom_sequences: { label: "Secuencias personalizadas" },
+  email_preview: { label: "Vista previa de los correos" },
   multi_brand: { label: "Multi-marca" },
   html_branding: { label: "Correos HTML con tu logo" },
 };
