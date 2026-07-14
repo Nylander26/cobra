@@ -12,8 +12,7 @@ const SEMESTRE = "2.º semestre de 2026";
 const BOE_LEY = "https://www.boe.es/buscar/act.php?id=BOE-A-2004-21830";
 
 export const metadata: Metadata = {
-  title:
-    "Calculadora de intereses de demora (Ley 3/2004) — gratis y al día | Cobra",
+  title: "Calculadora de intereses de demora (Ley 3/2004) — gratis y al día",
   description:
     "Calcula cuánto puedes reclamar por una factura impagada: interés de demora oficial por semestres (BOE) más la compensación de 40 € por costes de cobro. Sin registrarte.",
   alternates: { canonical: "/calculadora-intereses-demora" },
@@ -47,9 +46,24 @@ const FAQS = [
   },
 ];
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
 export default function CalculadoraPage() {
   return (
     <main className="flex min-h-dvh flex-col bg-papel text-grafito">
+      <script
+        type="application/ld+json"
+        // JSON generado desde constantes propias, sin input del usuario.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="mx-auto w-full max-w-3xl px-6">
         <header className="flex h-20 items-center justify-between">
           <Link
@@ -128,6 +142,26 @@ export default function CalculadoraPage() {
               Texto consolidado de la Ley 3/2004 en el BOE ↗
             </a>
           </section>
+
+          <div className="mt-12 rounded-2xl border border-linea bg-white p-6 sm:p-7">
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-cobra">
+              También te puede servir
+            </p>
+            <h2 className="mt-2 font-display text-xl tracking-tight text-tinta">
+              La carta para reclamar esa factura, ya escrita
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-grafito/80">
+              Elige el tono —del recordatorio amable a la última notificación
+              con estos intereses incluidos— y copia el texto listo para
+              enviar.
+            </p>
+            <Link
+              href="/carta-reclamacion-factura-impagada"
+              className="mt-4 inline-block rounded-lg border border-linea px-4 py-2 text-sm font-medium text-tinta transition hover:border-cobra/40 hover:text-cobra"
+            >
+              Generar la carta de reclamación →
+            </Link>
+          </div>
         </section>
 
         <footer className="border-t border-linea py-8 text-sm text-grafito/60">

@@ -373,6 +373,12 @@ export default function Home() {
               >
                 Calculadora de intereses
               </Link>
+              <Link
+                href="/carta-reclamacion-factura-impagada"
+                className="transition hover:text-marfil"
+              >
+                Carta de reclamación
+              </Link>
               <a
                 href={BOE_LEY}
                 target="_blank"
