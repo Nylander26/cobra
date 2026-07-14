@@ -352,61 +352,121 @@ export default function Home() {
             </Link>
           </div>
 
-          <footer className="mt-16 flex flex-col gap-6 border-t border-marfil/15 pt-8 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2.5 text-marfil/80">
-              <CobraMark className="h-5 w-5" />
-              <span className="font-display text-lg">Cobra</span>
+          <footer className="mt-16 border-t border-marfil/15 pt-10">
+            <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+              <div>
+                <div className="flex items-center gap-2.5 text-marfil/80">
+                  <CobraMark className="h-5 w-5" />
+                  <span className="font-display text-lg">Cobra</span>
+                </div>
+                <p className="mt-3 max-w-xs text-sm leading-relaxed text-marfil/50">
+                  Recordatorios de cobro automáticos, educados y en tu nombre,
+                  hasta que la factura queda pagada.
+                </p>
+              </div>
+
+              <nav aria-label="Producto">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-musgo">
+                  Producto
+                </p>
+                <ul className="mt-4 space-y-2.5 text-sm text-marfil/60">
+                  <li>
+                    <a
+                      href="#como-funciona"
+                      className="transition hover:text-marfil"
+                    >
+                      Cómo funciona
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#precios" className="transition hover:text-marfil">
+                      Precios
+                    </a>
+                  </li>
+                  <li>
+                    <Link href="/login" className="transition hover:text-marfil">
+                      Entrar
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/signup"
+                      className="transition hover:text-marfil"
+                    >
+                      Empezar gratis
+                    </Link>
+                  </li>
+                </ul>
+              </nav>
+
+              <nav aria-label="Herramientas gratuitas">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-musgo">
+                  Herramientas
+                </p>
+                <ul className="mt-4 space-y-2.5 text-sm text-marfil/60">
+                  <li>
+                    <Link
+                      href="/calculadora-intereses-demora"
+                      className="transition hover:text-marfil"
+                    >
+                      Calculadora de intereses
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/carta-reclamacion-factura-impagada"
+                      className="transition hover:text-marfil"
+                    >
+                      Carta de reclamación
+                    </Link>
+                  </li>
+                  <li>
+                    <a
+                      href={BOE_LEY}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="transition hover:text-marfil"
+                    >
+                      Ley 3/2004 ↗
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+
+              <nav aria-label="Legal">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-musgo">
+                  Legal
+                </p>
+                <ul className="mt-4 space-y-2.5 text-sm text-marfil/60">
+                  <li>
+                    <Link
+                      href="/legal/aviso-legal"
+                      className="transition hover:text-marfil"
+                    >
+                      Aviso legal
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/legal/privacidad"
+                      className="transition hover:text-marfil"
+                    >
+                      Privacidad
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/legal/condiciones"
+                      className="transition hover:text-marfil"
+                    >
+                      Condiciones
+                    </Link>
+                  </li>
+                </ul>
+              </nav>
             </div>
-            <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-marfil/60">
-              <a href="#como-funciona" className="transition hover:text-marfil">
-                Cómo funciona
-              </a>
-              <a href="#precios" className="transition hover:text-marfil">
-                Precios
-              </a>
-              <Link href="/login" className="transition hover:text-marfil">
-                Entrar
-              </Link>
-              <Link
-                href="/calculadora-intereses-demora"
-                className="transition hover:text-marfil"
-              >
-                Calculadora de intereses
-              </Link>
-              <Link
-                href="/carta-reclamacion-factura-impagada"
-                className="transition hover:text-marfil"
-              >
-                Carta de reclamación
-              </Link>
-              <a
-                href={BOE_LEY}
-                target="_blank"
-                rel="noreferrer"
-                className="transition hover:text-marfil"
-              >
-                Ley 3/2004
-              </a>
-              <Link
-                href="/legal/aviso-legal"
-                className="transition hover:text-marfil"
-              >
-                Aviso legal
-              </Link>
-              <Link
-                href="/legal/privacidad"
-                className="transition hover:text-marfil"
-              >
-                Privacidad
-              </Link>
-              <Link
-                href="/legal/condiciones"
-                className="transition hover:text-marfil"
-              >
-                Condiciones
-              </Link>
-            </nav>
-            <p className="font-mono text-xs text-marfil/40">
+
+            <p className="mt-12 border-t border-marfil/10 pt-6 font-mono text-xs text-marfil/40">
               © 2026 Cobra · Hecho para autónomos en España
             </p>
           </footer>
