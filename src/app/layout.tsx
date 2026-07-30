@@ -30,6 +30,10 @@ export const metadata: Metadata = {
   },
   description:
     "Recordatorios de pago automáticos, educados y en tu nombre. Cobra persigue tus facturas vencidas hasta que se pagan, con el interés de demora de la Ley 3/2004 calculado solo.",
+  verification: {
+    // Google Search Console — propiedad micobra.es
+    google: "qCwL6DmjaJsME0GngzFHFS81pYHYANrxclTjiyrbCiE",
+  },
 };
 
 export default function RootLayout({
