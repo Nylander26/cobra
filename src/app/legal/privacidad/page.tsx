@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/legal/privacidad" },
 };
 
-const REVISION = "13 de julio de 2026";
+const REVISION = "17 de agosto de 2026";
 
 export default function PrivacidadPage() {
   return (
@@ -66,6 +66,16 @@ export default function PrivacidadPage() {
           <strong>sin cookies ni identificadores personales</strong>. Base
           legal: interés legítimo (art. 6.1.f RGPD).
         </li>
+        <li>
+          <strong>Medición de la publicidad:</strong> si lo aceptas en el aviso
+          de cookies, medimos qué anuncio te trajo hasta aquí y si acabaste
+          creando una cuenta. Para ello instalamos cookies de Meta y enviamos a
+          Meta determinados eventos desde nuestros servidores con tu correo{" "}
+          <strong>cifrado mediante SHA-256</strong>, nunca en claro. Base legal:{" "}
+          <strong>tu consentimiento</strong> (art. 6.1.a RGPD), que puedes
+          retirar cuando quieras. Detalle en la{" "}
+          <a href="/legal/cookies">política de cookies</a>.
+        </li>
       </ul>
 
       <h2>Dónde se alojan y quién nos ayuda a tratarlos</h2>
@@ -93,9 +103,14 @@ export default function PrivacidadPage() {
         <li>
           <strong>Stripe</strong> — procesamiento de pagos.
         </li>
+        <li>
+          <strong>Meta Platforms Ireland Ltd.</strong> — medición de la
+          publicidad, solo si has aceptado las cookies de marketing.
+        </li>
       </ul>
       <p>
-        Algunos de estos proveedores son empresas estadounidenses; cuando ello
+        Algunos de estos proveedores son empresas estadounidenses, o filiales
+        europeas de matrices estadounidenses —es el caso de Meta—; cuando ello
         implica transferencias internacionales, se amparan en el EU-U.S. Data
         Privacy Framework o en cláusulas contractuales tipo aprobadas por la
         Comisión Europea.
@@ -111,10 +126,20 @@ export default function PrivacidadPage() {
 
       <h2>Cookies</h2>
       <p>
-        Cobra solo utiliza <strong>cookies técnicas de sesión</strong>,
-        imprescindibles para mantener tu sesión iniciada. No usamos cookies de
-        analítica ni de publicidad, ni cookies de terceros; por eso no
-        mostramos banner de consentimiento (art. 22.2 LSSI-CE).
+        Cobra utiliza <strong>cookies técnicas</strong> —imprescindibles para
+        mantener tu sesión iniciada y para recordar esta misma decisión— que no
+        requieren consentimiento (art. 22.2 LSSI-CE), y{" "}
+        <strong>cookies de terceros de Meta</strong> (_fbp y _fbc) para medir
+        la publicidad, que{" "}
+        <strong>sí lo requieren</strong> (art. 22.1 LSSI-CE).
+      </p>
+      <p>
+        Por eso mostramos un aviso de cookies la primera vez que entras, con
+        aceptar y rechazar al mismo nivel: hasta que no aceptes no se carga
+        ninguna cookie que no sea estrictamente necesaria. Puedes cambiar de
+        opinión en cualquier momento desde el enlace «Preferencias de cookies»
+        del pie de página. El detalle de cada cookie, su titular y su duración
+        está en la <a href="/legal/cookies">política de cookies</a>.
       </p>
 
       <h2>Tus derechos</h2>

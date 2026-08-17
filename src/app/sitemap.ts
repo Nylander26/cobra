@@ -13,5 +13,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/legal/aviso-legal`, priority: 0.1 },
     { url: `${base}/legal/privacidad`, priority: 0.1 },
     { url: `${base}/legal/condiciones`, priority: 0.1 },
+    { url: `${base}/legal/cookies`, priority: 0.1 },
   ];
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BotonPreferencias } from "@/components/consent/boton-preferencias";
 import { CobraMark } from "@/components/logo";
 import { Generator } from "./generator";
 
@@ -216,6 +217,15 @@ export default function CartaReclamacionPage() {
           <p>
             Este generador es orientativo y no constituye asesoramiento
             jurídico. Revisa la carta antes de enviarla: sale en tu nombre.
+          </p>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/legal/privacidad" className="hover:text-cobra">
+              Privacidad
+            </Link>
+            <Link href="/legal/cookies" className="hover:text-cobra">
+              Cookies
+            </Link>
+            <BotonPreferencias className="hover:text-cobra" />
           </p>
         </footer>
       </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { trackMeta } from "@/lib/meta/client";
 
 type Mode = "login" | "signup";
 
@@ -89,6 +90,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (mode === "signup") {
       setSentTo(email);
       setPending(false);
+      // Lead, no CompleteRegistration: la cuenta todavía no está activa. La
+      // activación real (verificar el email) la reporta el servidor, que es
+      // quien se entera aunque el usuario haga clic desde otro dispositivo.
+      // Sin await: la medición no puede retrasar la pantalla de "revisa tu
+      // correo" ni romperla si Meta falla.
+      void trackMeta("Lead", { email });
       return;
     }
 

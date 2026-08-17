@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { computeLateInterest } from "@/lib/late-interest";
+import { trackPixel } from "@/lib/meta/client";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 import {
   buildLetter,
@@ -98,6 +99,14 @@ export function Generator() {
       remitente,
     });
     setResult({ ...letter, tone, interesLinea });
+
+    // Solo píxel: visitante anónimo, sin email. Se manda el uso real de la
+    // herramienta, no la visita — el tono elegido dice mucho de la intención.
+    trackPixel("ViewContent", {
+      content_name: "carta-reclamacion-factura-impagada",
+      content_category: "herramienta",
+      content_variant: tone,
+    });
   }
 
   async function copy(kind: "subject" | "body", text: string) {

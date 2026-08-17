@@ -5,6 +5,8 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { renderCobraEmail } from "@/lib/email/cobra-template";
 import { getTransport } from "@/lib/email/transport";
+import { atribucionDeRequest, leerAtribucion } from "@/lib/meta/attrib";
+import { enviarEventoMeta } from "@/lib/meta/capi";
 
 // En Vercel cada deployment tiene su propia URL además del dominio estable;
 // Better-Auth por defecto solo confía en BETTER_AUTH_URL y respondía
@@ -89,6 +91,33 @@ El enlace caduca en 1 hora. Si no lo has pedido tú, ignora este mensaje: tu con
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
+    // La cuenta queda activa aquí, no al crearse: hasta que no confirma el
+    // email no entra, así que un alta sin verificar es un lead basura. Este es
+    // el evento que conviene optimizar en Meta.
+    //
+    // Solo CAPI: el clic llega desde el cliente de correo y puede ser otro
+    // dispositivo, así que no hay navegador nuestro donde disparar el píxel.
+    // Por eso la atribución se combina —cookies de esta request si las hay, y
+    // si no las guardadas cuando sí había navegador—.
+    async afterEmailVerification(verificado, request) {
+      const deRequest = atribucionDeRequest(request);
+      const guardada = await leerAtribucion(verificado.id);
+      await enviarEventoMeta({
+        eventName: "CompleteRegistration",
+        // Determinista: un reintento no cuenta como un alta más.
+        eventId: `reg_${verificado.id}`,
+        actionSource: "system_generated",
+        userData: {
+          email: verificado.email,
+          externalId: verificado.id,
+          fbp: deRequest.fbp ?? guardada.fbp ?? null,
+          fbc: deRequest.fbc ?? guardada.fbc ?? null,
+          clientIp: deRequest.clientIp ?? guardada.clientIp ?? null,
+          clientUserAgent:
+            deRequest.clientUserAgent ?? guardada.clientUserAgent ?? null,
+        },
+      });
+    },
     async sendVerificationEmail({ user, url }) {
       await getTransport().send({
         to: user.email,

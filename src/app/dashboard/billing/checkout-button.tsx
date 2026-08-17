@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Spinner } from "@/components/icons";
+import { nuevoEventId, trackPixel } from "@/lib/meta/client";
+import { PLANS, type PlanId } from "@/lib/plans";
 import { startCheckout } from "./actions";
 
 // Abre el checkout de Stripe en una pestaña nueva con candado anti
@@ -23,9 +25,22 @@ export function CheckoutButton({
     setPending(true);
     setError(null);
 
+    // window.open PRIMERO y de forma síncrona dentro del gesto del clic: si se
+    // mete cualquier cosa antes, el bloqueador de popups lo mata.
     const tab = window.open("", "_blank");
+
+    // El id nace aquí y viaja a la server action, que manda el mismo evento
+    // por CAPI. Mismo id en los dos canales = una sola conversión en Meta.
+    const eventId = nuevoEventId();
+    const precio = PLANS[plan as PlanId]?.priceCents;
+    trackPixel(
+      "InitiateCheckout",
+      precio ? { value: precio / 100, currency: "EUR" } : undefined,
+      eventId,
+    );
+
     try {
-      const result = await startCheckout(plan);
+      const result = await startCheckout(plan, eventId);
       if (result.url) {
         if (tab) {
           tab.location.href = result.url;

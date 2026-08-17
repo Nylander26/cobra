@@ -30,6 +30,9 @@ export default function LegalLayout({
             <Link href="/legal/condiciones" className="hover:text-cobra">
               Condiciones
             </Link>
+            <Link href="/legal/cookies" className="hover:text-cobra">
+              Cookies
+            </Link>
           </nav>
         </header>
 

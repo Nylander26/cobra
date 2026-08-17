@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BotonPreferencias } from "@/components/consent/boton-preferencias";
 import { CobraMark } from "@/components/logo";
 import { Calculator } from "./calculator";
 
@@ -168,6 +169,15 @@ export default function CalculadoraPage() {
           <p>
             Esta calculadora es orientativa y no constituye asesoramiento
             jurídico. Tipos oficiales publicados semestralmente en el BOE.
+          </p>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/legal/privacidad" className="hover:text-cobra">
+              Privacidad
+            </Link>
+            <Link href="/legal/cookies" className="hover:text-cobra">
+              Cookies
+            </Link>
+            <BotonPreferencias className="hover:text-cobra" />
           </p>
         </footer>
       </div>

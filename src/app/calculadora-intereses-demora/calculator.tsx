@@ -5,6 +5,7 @@ import {
   computeLateInterest,
   type LateInterest,
 } from "@/lib/late-interest";
+import { trackPixel } from "@/lib/meta/client";
 import { formatCents, parseAmountToCents } from "@/lib/money";
 
 type Result = LateInterest & { amountCents: number };
@@ -45,6 +46,14 @@ export function Calculator() {
     }
 
     setResult({ ...computeLateInterest(amountCents, dueDate, asOf), amountCents });
+
+    // Solo píxel: es un visitante anónimo, sin email, así que la CAPI aportaría
+    // poco y costaría una request. Se manda el uso real de la herramienta, no
+    // la visita: es la señal que separa tráfico curioso de tráfico interesado.
+    trackPixel("ViewContent", {
+      content_name: "calculadora-intereses-demora",
+      content_category: "herramienta",
+    });
   }
 
   return (

@@ -2,8 +2,10 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { db } from "@/db";
-import { subscriptions } from "@/db/schema";
+import { subscriptions, user } from "@/db/schema";
 import { newId } from "@/lib/ids";
+import { leerAtribucion, marcarPurchaseEnviado } from "@/lib/meta/attrib";
+import { enviarEventoMeta } from "@/lib/meta/capi";
 import { type PlanId, PLANS } from "@/lib/plans";
 import { stripe } from "@/lib/stripe";
 
@@ -31,6 +33,51 @@ async function upsertByUser(
       target: subscriptions.userId,
       set: { ...values, updatedAt: new Date() },
     });
+}
+
+// user_data para Meta. La metadata de Stripe es la fuente buena: se capturó en
+// el mismo navegador que hizo clic en el anuncio, al abrir el checkout. La
+// fila en `events` es el respaldo por si el checkout se creó antes de que
+// existiera esta instrumentación.
+async function datosMeta(userId: string, metadata: Stripe.Metadata | null) {
+  const [fila] = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  const guardada = await leerAtribucion(userId);
+
+  return {
+    email: fila?.email ?? null,
+    externalId: userId,
+    fbp: metadata?.fbp ?? guardada.fbp ?? null,
+    fbc: metadata?.fbc ?? guardada.fbc ?? null,
+    clientIp: guardada.clientIp ?? null,
+    clientUserAgent: guardada.clientUserAgent ?? null,
+  };
+}
+
+// La suscripción y su metadata cambiaron de sitio entre versiones de la API de
+// Stripe (raíz → `parent.subscription_details`). Se miran las dos.
+function detallesSuscripcion(invoice: Stripe.Invoice) {
+  const i = invoice as unknown as {
+    subscription?: string;
+    subscription_details?: { metadata?: Stripe.Metadata | null };
+    parent?: {
+      subscription_details?: {
+        subscription?: string;
+        metadata?: Stripe.Metadata | null;
+      };
+    };
+  };
+  return {
+    subscriptionId:
+      i.subscription ?? i.parent?.subscription_details?.subscription ?? null,
+    metadata:
+      i.subscription_details?.metadata ??
+      i.parent?.subscription_details?.metadata ??
+      null,
+  };
 }
 
 export async function POST(req: Request) {
@@ -65,6 +112,21 @@ export async function POST(req: Request) {
           stripeCustomerId: (s.customer as string) ?? null,
           stripeSubscriptionId: (s.subscription as string) ?? null,
         });
+
+        // StartTrial, no Purchase: esta sesión se completa con 0 € porque el
+        // trial es de 14 días sin tarjeta. La venta llega en invoice.paid.
+        // predicted_ltv le da a Meta con qué optimizar mientras no hay cobros.
+        await enviarEventoMeta({
+          eventName: "StartTrial",
+          eventId: `trial_${s.id}`,
+          actionSource: "system_generated",
+          userData: await datosMeta(userId, s.metadata),
+          customData: {
+            value: 0,
+            currency: "EUR",
+            predicted_ltv: (PLANS[plan].priceCents / 100) * 12,
+          },
+        });
       }
       break;
     }
@@ -95,6 +157,43 @@ export async function POST(req: Request) {
       if (userId) {
         await upsertByUser(userId, { plan: "free", status: "canceled" });
       }
+      break;
+    }
+
+    // La venta de verdad: el primer cobro con importe, cuando el trial de 14
+    // días convierte. Antes de esto no ha entrado un euro.
+    case "invoice.paid": {
+      const invoice = event.data.object;
+      // La factura del trial se emite a 0 €: no es una compra.
+      if ((invoice.amount_paid ?? 0) <= 0) break;
+
+      const { subscriptionId, metadata } = detallesSuscripcion(invoice);
+      let userId = metadata?.userId ?? null;
+      if (!userId && subscriptionId) {
+        const [fila] = await db
+          .select({ userId: subscriptions.userId })
+          .from(subscriptions)
+          .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+          .limit(1);
+        userId = fila?.userId ?? null;
+      }
+      if (!userId || !subscriptionId) break;
+
+      // invoice.paid se dispara en cada renovación mensual y con un invoice.id
+      // distinto cada vez, así que la deduplicación de Meta no lo frena: sin
+      // esta guarda se reportaría una venta nueva todos los meses.
+      if (!(await marcarPurchaseEnviado(userId, subscriptionId))) break;
+
+      await enviarEventoMeta({
+        eventName: "Purchase",
+        eventId: invoice.id ?? `purchase_${subscriptionId}`,
+        actionSource: "system_generated",
+        userData: await datosMeta(userId, metadata),
+        customData: {
+          value: invoice.amount_paid / 100,
+          currency: (invoice.currency ?? "eur").toUpperCase(),
+        },
+      });
       break;
     }
 

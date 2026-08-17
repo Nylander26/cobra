@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotonPreferencias } from "@/components/consent/boton-preferencias";
 import { CobraMark } from "@/components/logo";
 import { Reveal } from "@/components/reveal";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
@@ -461,6 +462,17 @@ export default function Home() {
                     >
                       Condiciones
                     </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/legal/cookies"
+                      className="transition hover:text-marfil"
+                    >
+                      Cookies
+                    </Link>
+                  </li>
+                  <li>
+                    <BotonPreferencias className="text-left transition hover:text-marfil" />
                   </li>
                 </ul>
               </nav>

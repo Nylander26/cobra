@@ -1,6 +1,9 @@
 "use server";
 
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { guardarAtribucion } from "@/lib/meta/attrib";
+import { enviarEventoMeta } from "@/lib/meta/capi";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { requireSession } from "@/lib/session";
 import { isLiveKey, stripe } from "@/lib/stripe";
@@ -11,7 +14,12 @@ export type CheckoutResult = { url?: string; error?: string };
 
 // Devuelve la URL de pago en vez de redirigir: el cliente la abre en una
 // pestaña nueva (window.open dentro del gesto del click) con estado de carga.
-export async function startCheckout(planInput: string): Promise<CheckoutResult> {
+export async function startCheckout(
+  planInput: string,
+  // Lo genera el botón para que píxel y CAPI manden el mismo evento. Opcional:
+  // sin consentimiento de marketing el cliente no lo envía.
+  metaEventId?: string,
+): Promise<CheckoutResult> {
   const { user } = await requireSession();
   const planId = planInput as PlanId;
   const plan = PLANS[planId];
@@ -26,6 +34,22 @@ export async function startCheckout(planInput: string): Promise<CheckoutResult> 
         "Checkout en modo LIVE bloqueado en desarrollo. Configura una clave sk_test_.",
     };
   }
+
+  // Las cookies de Meta se leen AQUÍ, que es la última vez que hay navegador
+  // en la ecuación. El cobro real llega catorce días después por webhook, sin
+  // request de nadie: si no se capturan ahora, esa venta llega sin atribuir.
+  // Una server action ya es dinámica, así que leer cookies() no cuesta nada.
+  const cookieStore = await cookies();
+  const h = await headers();
+  const fbp = cookieStore.get("_fbp")?.value ?? null;
+  const fbc = cookieStore.get("_fbc")?.value ?? null;
+  const clientIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const clientUserAgent = h.get("user-agent");
+  await guardarAtribucion(user.id, { fbp, fbc, clientIp, clientUserAgent });
+
+  // Viajan dentro de Stripe para volver en checkout.session.completed y, vía
+  // subscription_details, en invoice.paid.
+  const metaMetadata = { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) };
 
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
@@ -51,7 +75,7 @@ export async function startCheckout(planInput: string): Promise<CheckoutResult> 
       trial_settings: {
         end_behavior: { missing_payment_method: "cancel" },
       },
-      metadata: { userId: user.id, plan: planId },
+      metadata: { userId: user.id, plan: planId, ...metaMetadata },
     },
     // El webhook (pendiente) leerá esto para activar el plan tras el pago.
     metadata: { userId: user.id, plan: planId },
@@ -62,5 +86,22 @@ export async function startCheckout(planInput: string): Promise<CheckoutResult> 
   if (!session.url) {
     return { error: "No se pudo iniciar el pago. Inténtalo de nuevo." };
   }
+
+  if (metaEventId) {
+    await enviarEventoMeta({
+      eventName: "InitiateCheckout",
+      eventId: metaEventId,
+      userData: {
+        email: user.email,
+        externalId: user.id,
+        fbp,
+        fbc,
+        clientIp,
+        clientUserAgent,
+      },
+      customData: { value: plan.priceCents / 100, currency: "EUR" },
+    });
+  }
+
   return { url: session.url };
 }
