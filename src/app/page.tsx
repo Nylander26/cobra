@@ -41,6 +41,42 @@ const SECUENCIA = [
   },
 ];
 
+// Confianza sin cifras: Cobra acaba de salir y un contador de usuarios sería
+// mentira. Cada punto de aquí es comprobable por el usuario antes de pagar —
+// y los de datos y tarjeta están detallados en /legal/privacidad.
+const GARANTIAS = [
+  {
+    titulo: "Tu cliente nunca ve a Cobra",
+    texto:
+      "Cada recordatorio sale con tu nombre, tu firma y tu dirección de correo. Por fuera es un email tuyo, escrito por ti.",
+  },
+  {
+    titulo: "14 días de prueba sin tarjeta",
+    texto:
+      "No pedimos datos de pago para empezar. Si no vuelves, la prueba caduca sola y no se te cobra nada.",
+  },
+  {
+    titulo: "Sin permanencia",
+    texto:
+      "Cancelas cuando quieras desde el portal de Stripe, en dos clics y en español. Ni llamadas, ni formularios, ni retenciones.",
+  },
+  {
+    titulo: "Tus datos se quedan en la UE",
+    texto:
+      "Base de datos, correo y archivos en servidores europeos, conforme al RGPD. Está todo detallado, proveedor a proveedor, en la política de privacidad.",
+  },
+  {
+    titulo: "Tu tarjeta no pasa por aquí",
+    texto:
+      "El pago lo procesa Stripe de principio a fin. Cobra no almacena tu número de tarjeta en ningún momento.",
+  },
+  {
+    titulo: "El plan gratuito no caduca",
+    texto:
+      "Dos facturas en seguimiento, para siempre y sin tarjeta. Si con eso te vale, quédate ahí: no hay cuenta atrás esperándote.",
+  },
+];
+
 function Eyebrow({
   children,
   claro = false,
@@ -239,6 +275,54 @@ export default function Home() {
               </div>
             </dl>
           </div>
+        </Reveal>
+      </section>
+
+      {/* ── Garantías ────────────────────────────────────────────────── */}
+      <section className="border-b border-linea bg-white/60">
+        <Reveal className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-28">
+          <Eyebrow>Sin letra pequeña</Eyebrow>
+          <h2 className="mt-4 max-w-2xl font-display text-3xl tracking-tight text-tinta sm:text-4xl">
+            Nada de esto te pide que{" "}
+            <em className="italic text-cobra">nos creas.</em>
+          </h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-grafito/75">
+            Vas a confiarle a Cobra el correo que le llega a tus clientes. Estas
+            son las seis cosas que puedes comprobar tú mismo antes de poner un
+            euro.
+          </p>
+
+          <div className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {GARANTIAS.map((g) => (
+              <div key={g.titulo} className="flex gap-4">
+                <span
+                  aria-hidden
+                  className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cobra/10 text-xs text-cobra"
+                >
+                  ✓
+                </span>
+                <div>
+                  <h3 className="font-medium text-tinta">{g.titulo}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-grafito/75">
+                    {g.texto}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-12 max-w-2xl border-l-2 border-cobra/30 pl-5 text-sm leading-relaxed text-grafito/70">
+            Cobra acaba de empezar, así que aquí no vas a encontrar un contador
+            de usuarios ni logos de empresas que nunca lo han usado. Preferimos
+            enseñarte lo que sí puedes verificar hoy.{" "}
+            <Link
+              href="/legal/privacidad"
+              className="text-cobra underline decoration-cobra/30 underline-offset-4 transition hover:decoration-cobra"
+            >
+              Política de privacidad
+            </Link>
+            .
+          </p>
         </Reveal>
       </section>
 
