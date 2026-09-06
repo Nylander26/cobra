@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { trackMeta } from "@/lib/meta/client";
 
@@ -279,32 +279,37 @@ function CampoContrasena({
   ...props
 }: { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   const [visible, setVisible] = useState(false);
+  const id = useId();
 
   return (
     <div className="space-y-1">
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-grafito">{label}</span>
-        <span className="relative block">
-          <input
-            {...props}
-            type={visible ? "text" : "password"}
-            placeholder="••••••••"
-            className={`${CLASES_INPUT} pr-11 ${error ? "border-red-400" : ""}`}
-          />
-          <button
-            type="button"
-            // No entra en el orden de tabulación: quien va con teclado quiere
-            // saltar de la contraseña al botón de enviar, no a un interruptor.
-            tabIndex={-1}
-            onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Ocultar la contraseña" : "Mostrar la contraseña"}
-            aria-pressed={visible}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-grafito/50 transition hover:text-cobra focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra"
-          >
-            {visible ? <OjoTachado /> : <OjoAbierto />}
-          </button>
-        </span>
+      {/* El botón va FUERA del <label>: dentro, su texto se cuela en el nombre
+          accesible del campo, que pasa a leerse «Contraseña, mostrar la
+          contraseña». De ahí el htmlFor en vez de envolver el input. */}
+      <label htmlFor={id} className="block text-sm font-medium text-grafito">
+        {label}
       </label>
+      <div className="relative">
+        <input
+          {...props}
+          id={id}
+          type={visible ? "text" : "password"}
+          placeholder="••••••••"
+          className={`${CLASES_INPUT} pr-11 ${error ? "border-red-400" : ""}`}
+        />
+        <button
+          type="button"
+          // No entra en el orden de tabulación: quien va con teclado quiere
+          // saltar de la contraseña al botón de enviar, no a un interruptor.
+          tabIndex={-1}
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? "Ocultar la contraseña" : "Mostrar la contraseña"}
+          aria-pressed={visible}
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-grafito/50 transition hover:text-cobra focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra"
+        >
+          {visible ? <OjoTachado /> : <OjoAbierto />}
+        </button>
+      </div>
       {error && (
         <p id="password-confirm-error" className="text-sm text-red-600" role="alert">
           {error}
