@@ -33,8 +33,7 @@ export default function AvisoLegalPage() {
       </p>
       <ul>
         <li>
-          <strong>Titular:</strong> {TITULAR.nombre}, empresario individual
-          (autónomo).
+          <strong>Titular:</strong> {TITULAR.nombre}, persona física.
         </li>
         {TITULAR.nif && (
           <li>
