@@ -24,7 +24,11 @@ Timeout de 30 s.
 ## Permisos
 
 La Lambda necesita `s3:GetObject` sobre `arn:aws:s3:::<bucket>/<prefijo>*` y
-`ses:SendEmail` sobre `*`.
+**`ses:SendRawEmail`** sobre `*`. Aunque el código llame a `SendEmailCommand`,
+el mensaje va en `Content.Raw` y IAM lo autoriza como `ses:SendRawEmail`: con
+solo `ses:SendEmail` la Lambda falla con `AccessDeniedException`. El rol que
+crea la consola al vuelo trae únicamente permisos de logs, así que esta política
+hay que añadirla a mano.
 
 El bucket necesita una policy que deje escribir a SES: principal
 `ses.amazonaws.com`, acción `s3:PutObject`, y una condición
