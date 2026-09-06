@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Overview, OverviewFallback } from "./overview";
+import { PrimerosPasos, PrimerosPasosFallback } from "./primeros-pasos";
 
 export default function DashboardPage() {
   return (
@@ -12,6 +13,12 @@ export default function DashboardPage() {
           Pendiente de cobro y aging de tus facturas.
         </p>
       </div>
+
+      {/* Suspense propio: la lista de puesta en marcha no puede retrasar el
+          resumen ni al revés. */}
+      <Suspense fallback={<PrimerosPasosFallback />}>
+        <PrimerosPasos />
+      </Suspense>
 
       <Suspense fallback={<OverviewFallback />}>
         <Overview />

@@ -3,6 +3,7 @@ import { BotonPreferencias } from "@/components/consent/boton-preferencias";
 import { CobraMark } from "@/components/logo";
 import { Reveal } from "@/components/reveal";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
+import { ComoFunciona } from "./como-funciona";
 import { HeroWave } from "./hero-wave";
 
 // Tipo legal vigente. Mantener en sintonía con RATES (src/lib/late-interest.ts):
@@ -11,27 +12,6 @@ const TIPO_DEMORA = "10,40 %";
 const SEMESTRE = "2.º semestre de 2026";
 const BOE_LEY =
   "https://www.boe.es/buscar/act.php?id=BOE-A-2004-21830";
-
-const PASOS = [
-  {
-    n: "1",
-    titulo: "Añade la factura",
-    texto:
-      "Cliente, importe y vencimiento. Cobra prepara la secuencia de recordatorios en ese mismo momento.",
-  },
-  {
-    n: "2",
-    titulo: "Cobra insiste por ti",
-    texto:
-      "Emails programados que suben de tono con elegancia: amables antes de vencer, firmes después. Siempre en tu nombre.",
-  },
-  {
-    n: "3",
-    titulo: "Te pagan, y en paz",
-    texto:
-      "Márcala como pagada y todo se detiene. Sin llamadas incómodas ni hilos de correo eternos.",
-  },
-];
 
 const SECUENCIA = [
   {
@@ -170,19 +150,7 @@ export default function Home() {
             Tres pasos, y solo el primero es tuyo.
           </h2>
 
-          <div className="mt-12 grid gap-10 sm:grid-cols-3 sm:gap-8">
-            {PASOS.map((paso) => (
-              <div key={paso.n} className="border-t border-linea pt-6">
-                <p className="font-mono text-sm text-cobra">{paso.n}</p>
-                <h3 className="mt-3 text-lg font-semibold text-tinta">
-                  {paso.titulo}
-                </h3>
-                <p className="mt-2 leading-relaxed text-grafito/75">
-                  {paso.texto}
-                </p>
-              </div>
-            ))}
-          </div>
+          <ComoFunciona />
         </Reveal>
       </section>
 
