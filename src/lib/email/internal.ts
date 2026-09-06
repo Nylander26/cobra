@@ -112,3 +112,43 @@ export function buildOpsAlertEmail(
     }),
   };
 }
+
+// Consulta desde el widget flotante de la web pública. A diferencia del
+// soporte del panel, aquí no hay sesión: el único dato de contacto es el
+// correo que la persona escribe, así que va destacado y en el reply-to.
+export function buildContactEmail(input: {
+  email: string;
+  message: string;
+  page: string;
+}): BuiltEmail {
+  const text = [
+    `De: ${input.email}`,
+    `Página: ${input.page}`,
+    "",
+    input.message,
+  ].join("\n");
+
+  const blockHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:2px 0 20px;">
+  <tr>
+    <td bgcolor="${MARFIL}" style="border-radius:8px; padding:14px 16px 9px;">
+      ${metaRow("Email", input.email)}
+      ${metaRow("Página", input.page)}
+    </td>
+  </tr>
+</table>
+<div style="border-left:3px solid ${TINTA}; padding:2px 0 2px 16px;">
+  <p style="margin:0; font-family:${SANS}; font-size:15px; line-height:1.7; color:${GRAFITO};">${multiline(input.message)}</p>
+</div>`;
+
+  return {
+    subject: `[Cobra web] Consulta de ${input.email}`,
+    text,
+    html: renderCobraEmail({
+      preheader: input.message.slice(0, 90),
+      eyebrow: "Consulta desde la web",
+      heading: input.email,
+      blockHtml,
+      footer: `Enviado desde el formulario flotante de la web. Responde a este correo y le llegará directamente a ${input.email}.`,
+    }),
+  };
+}

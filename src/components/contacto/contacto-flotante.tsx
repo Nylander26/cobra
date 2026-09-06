@@ -1,0 +1,267 @@
+"use client";
+
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import { Spinner } from "@/components/icons";
+import { type ContactoState, enviarConsulta } from "./actions";
+
+const POS_KEY = "cobra_contacto_pos";
+// Por debajo de este recorrido el gesto se trata como clic: al arrastrar con
+// el dedo siempre se mueve algún píxel, y sin margen el botón no abriría nunca
+// en móvil.
+const UMBRAL_ARRASTRE = 6;
+
+type Pos = { x: number; y: number };
+
+function dentroDePantalla(pos: Pos, ancho: number, alto: number): Pos {
+  return {
+    x: Math.min(Math.max(8, pos.x), Math.max(8, window.innerWidth - ancho - 8)),
+    y: Math.min(Math.max(8, pos.y), Math.max(8, window.innerHeight - alto - 8)),
+  };
+}
+
+export function ContactoFlotante() {
+  const [abierto, setAbierto] = useState(false);
+  const [pos, setPos] = useState<Pos | null>(null);
+  const [arrastrando, setArrastrando] = useState(false);
+  const contenedor = useRef<HTMLDivElement>(null);
+  const gesto = useRef<{ dx: number; dy: number; movido: boolean } | null>(null);
+
+  const [estado, accion, pendiente] = useActionState<ContactoState, FormData>(
+    enviarConsulta,
+    {},
+  );
+
+  // La posición es una comodidad por navegador, no estado compartido: si el
+  // almacenamiento falla (ventana privada, cookies bloqueadas) el widget
+  // aparece en su esquina de siempre y no pasa nada.
+  useEffect(() => {
+    try {
+      const crudo = localStorage.getItem(POS_KEY);
+      if (crudo) {
+        const guardada = JSON.parse(crudo) as Pos;
+        if (typeof guardada?.x === "number" && typeof guardada?.y === "number") {
+          const caja = contenedor.current?.getBoundingClientRect();
+          setPos(
+            dentroDePantalla(guardada, caja?.width ?? 56, caja?.height ?? 56),
+          );
+        }
+      }
+    } catch {
+      // Sin posición guardada: esquina por defecto.
+    }
+  }, []);
+
+  // Si la ventana encoge, lo arrastrado ayer puede quedar fuera de la pantalla
+  // de hoy y volverse inalcanzable.
+  useEffect(() => {
+    if (!pos) return;
+    function alRedimensionar() {
+      const caja = contenedor.current?.getBoundingClientRect();
+      setPos((p) =>
+        p ? dentroDePantalla(p, caja?.width ?? 56, caja?.height ?? 56) : p,
+      );
+    }
+    window.addEventListener("resize", alRedimensionar);
+    return () => window.removeEventListener("resize", alRedimensionar);
+  }, [pos]);
+
+  useEffect(() => {
+    if (!abierto) return;
+    function alPulsar(ev: KeyboardEvent) {
+      if (ev.key === "Escape") setAbierto(false);
+    }
+    window.addEventListener("keydown", alPulsar);
+    return () => window.removeEventListener("keydown", alPulsar);
+  }, [abierto]);
+
+  const alBajar = useCallback((ev: React.PointerEvent<HTMLElement>) => {
+    const caja = contenedor.current?.getBoundingClientRect();
+    if (!caja) return;
+    gesto.current = {
+      dx: ev.clientX - caja.left,
+      dy: ev.clientY - caja.top,
+      movido: false,
+    };
+    (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
+    setArrastrando(true);
+  }, []);
+
+  const alMover = useCallback((ev: React.PointerEvent<HTMLElement>) => {
+    const g = gesto.current;
+    const caja = contenedor.current?.getBoundingClientRect();
+    if (!g || !caja) return;
+    const siguiente = { x: ev.clientX - g.dx, y: ev.clientY - g.dy };
+    if (
+      Math.abs(siguiente.x - caja.left) > UMBRAL_ARRASTRE ||
+      Math.abs(siguiente.y - caja.top) > UMBRAL_ARRASTRE
+    ) {
+      g.movido = true;
+    }
+    setPos(dentroDePantalla(siguiente, caja.width, caja.height));
+  }, []);
+
+  const alSoltar = useCallback((ev: React.PointerEvent<HTMLElement>) => {
+    const g = gesto.current;
+    gesto.current = null;
+    setArrastrando(false);
+    (ev.currentTarget as HTMLElement).releasePointerCapture?.(ev.pointerId);
+    if (!g) return;
+    // Un arrastre no debe abrir ni cerrar el panel.
+    if (!g.movido) setAbierto((v) => !v);
+    setPos((p) => {
+      if (p) {
+        try {
+          localStorage.setItem(POS_KEY, JSON.stringify(p));
+        } catch {
+          // La posición no se recordará; el widget sigue funcionando.
+        }
+      }
+      return p;
+    });
+  }, []);
+
+  const estilo = pos
+    ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
+    : undefined;
+
+  return (
+    <div
+      ref={contenedor}
+      style={estilo}
+      className={`fixed right-4 bottom-4 z-40 flex flex-col items-end gap-3 ${
+        arrastrando ? "select-none" : ""
+      }`}
+    >
+      {abierto && (
+        <div
+          role="dialog"
+          aria-label="Contacto"
+          className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          {estado.ok ? (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+                Mensaje enviado
+              </p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Te respondemos al correo que nos has dejado, normalmente el
+                mismo día.
+              </p>
+              <button
+                type="button"
+                onClick={() => setAbierto(false)}
+                className="mt-1 text-sm font-medium text-cobra underline underline-offset-4"
+              >
+                Cerrar
+              </button>
+            </div>
+          ) : (
+            <form action={accion} className="space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+                  ¿Alguna duda?
+                </p>
+                <p className="text-xs text-neutral-500">
+                  Escríbenos y te contestamos por correo.
+                </p>
+              </div>
+
+              <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                Tu correo
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  autoComplete="email"
+                  placeholder="tu@correo.com"
+                  className="mt-1 h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
+                />
+              </label>
+
+              <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                Tu mensaje
+                <textarea
+                  name="message"
+                  required
+                  rows={4}
+                  minLength={10}
+                  maxLength={3000}
+                  placeholder="Cuéntanos qué necesitas saber."
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
+                />
+              </label>
+
+              {/* Trampa para bots: fuera de la vista y fuera del tabulador. */}
+              <input
+                type="text"
+                name="empresa"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="hidden"
+              />
+
+              <button
+                type="submit"
+                disabled={pendiente}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-cobra px-4 py-2 text-sm font-medium text-white transition hover:bg-cobra-oscuro disabled:opacity-60"
+              >
+                {pendiente && <Spinner className="h-4 w-4" />}
+                {pendiente ? "Enviando…" : "Enviar"}
+              </button>
+
+              {estado.error && (
+                <p className="text-xs text-red-600" role="alert">
+                  {estado.error}
+                </p>
+              )}
+
+              <p className="text-[11px] leading-relaxed text-neutral-400">
+                Usamos tu correo solo para responderte. Más detalle en la{" "}
+                <a href="/legal/privacidad" className="underline">
+                  política de privacidad
+                </a>
+                .
+              </p>
+            </form>
+          )}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onPointerDown={alBajar}
+        onPointerMove={alMover}
+        onPointerUp={alSoltar}
+        aria-label={abierto ? "Cerrar el contacto" : "Abrir el contacto"}
+        aria-expanded={abierto}
+        className={`flex h-14 w-14 touch-none items-center justify-center rounded-full bg-cobra text-white shadow-lg transition hover:bg-cobra-oscuro focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra ${
+          arrastrando ? "scale-105 cursor-grabbing" : "cursor-grab"
+        }`}
+      >
+        {abierto ? (
+          <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+            <path
+              d="M21 11.5a8.38 8.38 0 0 1-9 8.3 8.5 8.5 0 0 1-3.8-.9L3 20l1.1-4.1A8.38 8.38 0 0 1 3 11.5a8.5 8.5 0 0 1 9-8.3 8.38 8.38 0 0 1 9 8.3z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
