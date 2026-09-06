@@ -36,12 +36,48 @@ function crearCola(): Fbq {
   return fbq;
 }
 
-// Idempotente: llamarla en cada navegación no vuelve a descargar nada.
-export function cargarPixel(pixelId: string) {
-  if (window.fbq) return;
+// Estado propio del módulo. NO se usa `window.fbq` como señal de "ya cargado":
+// las extensiones de depuración del píxel inyectan su propio `fbq` para
+// espiar las llamadas, y ese stub hacía que esta función saliera por la puerta
+// de atrás sin descargar fbevents.js ni llamar a `init` — los eventos se
+// enviaban a un píxel que no existía ("Track event before pixel init").
+let cargado = false;
+let revocado = false;
+
+// Una extensión (o cualquier script de terceros) puede haber dejado un `fbq`
+// sin la forma que fbevents.js espera. Se normaliza para que la librería
+// encuentre la cola y la vacíe al cargar, en vez de perder el `init`.
+function asegurarCola(): Fbq {
+  const existente = window.fbq;
+  if (existente) {
+    if (!Array.isArray(existente.queue)) {
+      existente.queue = [];
+      existente.loaded = true;
+      existente.version = "2.0";
+      existente.push = existente;
+    }
+    return existente;
+  }
   const fbq = crearCola();
   window.fbq = fbq;
   window._fbq ??= fbq;
+  return fbq;
+}
+
+// Idempotente: llamarla en cada navegación no vuelve a descargar nada.
+export function cargarPixel(pixelId: string) {
+  const fbq = asegurarCola();
+
+  // Revocar y volver a conceder ocurre dentro de la misma página: sin este
+  // `grant` explícito el píxel se quedaba mudo hasta una recarga completa,
+  // porque `revoke` es pegajoso para el resto de la sesión.
+  if (revocado) {
+    fbq("consent", "grant");
+    revocado = false;
+  }
+
+  if (cargado) return;
+  cargado = true;
 
   const script = document.createElement("script");
   script.async = true;
@@ -54,6 +90,10 @@ export function cargarPixel(pixelId: string) {
 // Retirar el consentimiento tiene que parar el tratamiento de verdad, no solo
 // dejar de llamar a fbq: se le dice a Meta que revoque y se borran sus cookies.
 export function revocarPixel() {
+  // Sin esta guarda se emitía un `revoke` en cada navegación de quien no ha
+  // aceptado marketing: ruido en el stream y borrado de cookies en bucle.
+  if (revocado) return;
+  revocado = true;
   window.fbq?.("consent", "revoke");
   for (const nombre of ["_fbp", "_fbc"]) {
     document.cookie = `${nombre}=; Path=/; Max-Age=0; SameSite=Lax`;
