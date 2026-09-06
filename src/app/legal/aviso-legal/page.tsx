@@ -8,7 +8,17 @@ export const metadata: Metadata = {
 };
 
 // Última revisión del texto. Actualizar al cambiar el contenido.
-const REVISION = "13 de julio de 2026";
+const REVISION = "6 de septiembre de 2026";
+
+// Datos identificativos que el art. 10 LSSI-CE obliga a publicar. El NIF se
+// omite de la página mientras esté vacío: antes un dato ausente que uno
+// inventado. Rellenarlo cierra el cumplimiento.
+const TITULAR = {
+  nombre: "Wolfgang Nylander Tabares",
+  nif: "",
+  domicilio: "Calle Arroyo Belincoso 30, 28030 Madrid, España",
+  email: "soporte@micobra.es",
+};
 
 export default function AvisoLegalPage() {
   return (
@@ -23,12 +33,20 @@ export default function AvisoLegalPage() {
       </p>
       <ul>
         <li>
-          <strong>Titular:</strong> Wolfgang Nylander Tabares, empresario
-          individual (autónomo).
+          <strong>Titular:</strong> {TITULAR.nombre}, empresario individual
+          (autónomo).
+        </li>
+        {TITULAR.nif && (
+          <li>
+            <strong>NIF:</strong> {TITULAR.nif}
+          </li>
+        )}
+        <li>
+          <strong>Domicilio:</strong> {TITULAR.domicilio}
         </li>
         <li>
           <strong>Contacto:</strong>{" "}
-          <a href="mailto:soporte@micobra.es">soporte@micobra.es</a>
+          <a href={`mailto:${TITULAR.email}`}>{TITULAR.email}</a>
         </li>
         <li>
           <strong>Dominio:</strong> micobra.es

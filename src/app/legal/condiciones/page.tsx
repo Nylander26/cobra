@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/legal/condiciones" },
 };
 
-const REVISION = "13 de julio de 2026";
+const REVISION = "6 de septiembre de 2026";
 
 export default function CondicionesPage() {
   return (
@@ -42,7 +42,7 @@ export default function CondicionesPage() {
         <li>
           Los planes vigentes y sus límites (facturas activas, marcas, envíos
           diarios) son los publicados en la página de precios. Los precios se
-          muestran en euros, por mes.
+          muestran en euros, por mes y <strong>con el IVA incluido</strong>.
         </li>
         <li>
           Los planes de pago incluyen <strong>14 días de prueba sin
@@ -51,8 +51,10 @@ export default function CondicionesPage() {
           sin cargo alguno.
         </li>
         <li>
-          Puedes cancelar en cualquier momento; la cancelación surte efecto al
-          final del período ya pagado y no se prorratean devoluciones.
+          Puedes cancelar en cualquier momento desde{" "}
+          <strong>Gestionar suscripción</strong>, en la página Plan de tu
+          panel. La cancelación surte efecto al final del período ya pagado y
+          no se prorratean devoluciones.
         </li>
         <li>
           El pago se procesa a través de Stripe. Los precios podrán
@@ -105,7 +107,8 @@ export default function CondicionesPage() {
       <h2>7. Baja y cierre de cuenta</h2>
       <p>
         Puedes darte de baja en cualquier momento cancelando tu suscripción
-        desde el panel y solicitando el cierre de la cuenta en{" "}
+        desde <strong>Gestionar suscripción</strong>, en la página Plan de tu
+        panel, y solicitando el cierre de la cuenta en{" "}
         <a href="mailto:soporte@micobra.es">soporte@micobra.es</a>. Al cierre
         se eliminan tus datos conforme a la Política de privacidad.
       </p>

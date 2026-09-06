@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/legal/privacidad" },
 };
 
-const REVISION = "17 de agosto de 2026";
+const REVISION = "6 de septiembre de 2026";
 
 export default function PrivacidadPage() {
   return (
@@ -24,6 +24,10 @@ export default function PrivacidadPage() {
         <li>
           <strong>Responsable:</strong> Wolfgang Nylander Tabares (titular de
           Cobra).
+        </li>
+        <li>
+          <strong>Domicilio:</strong> Calle Arroyo Belincoso 30, 28030 Madrid,
+          España.
         </li>
         <li>
           <strong>Contacto:</strong>{" "}
