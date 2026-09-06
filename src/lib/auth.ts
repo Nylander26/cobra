@@ -5,7 +5,13 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { renderCobraEmail } from "@/lib/email/cobra-template";
 import { getTransport } from "@/lib/email/transport";
-import { atribucionDeRequest, leerAtribucion } from "@/lib/meta/attrib";
+import {
+  atribucionDeHeaders,
+  atribucionDeRequest,
+  combinarAtribucion,
+  guardarAtribucion,
+  leerAtribucion,
+} from "@/lib/meta/attrib";
 import { enviarEventoMeta } from "@/lib/meta/capi";
 
 // En Vercel cada deployment tiene su propia URL además del dominio estable;
@@ -100,8 +106,10 @@ El enlace caduca en 1 hora. Si no lo has pedido tú, ignora este mensaje: tu con
     // Por eso la atribución se combina —cookies de esta request si las hay, y
     // si no las guardadas cuando sí había navegador—.
     async afterEmailVerification(verificado, request) {
-      const deRequest = atribucionDeRequest(request);
-      const guardada = await leerAtribucion(verificado.id);
+      const atribucion = combinarAtribucion(
+        atribucionDeRequest(request),
+        await leerAtribucion(verificado.id),
+      );
       await enviarEventoMeta({
         eventName: "CompleteRegistration",
         // Determinista: un reintento no cuenta como un alta más.
@@ -110,11 +118,10 @@ El enlace caduca en 1 hora. Si no lo has pedido tú, ignora este mensaje: tu con
         userData: {
           email: verificado.email,
           externalId: verificado.id,
-          fbp: deRequest.fbp ?? guardada.fbp ?? null,
-          fbc: deRequest.fbc ?? guardada.fbc ?? null,
-          clientIp: deRequest.clientIp ?? guardada.clientIp ?? null,
-          clientUserAgent:
-            deRequest.clientUserAgent ?? guardada.clientUserAgent ?? null,
+          fbp: atribucion.fbp,
+          fbc: atribucion.fbc,
+          clientIp: atribucion.clientIp,
+          clientUserAgent: atribucion.clientUserAgent,
         },
       });
     },
@@ -155,6 +162,26 @@ Si no has creado esta cuenta, ignora este mensaje.
       emailSignature: {
         type: "string",
         required: false,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        // El alta es el ÚLTIMO momento en que existen a la vez el usuario y el
+        // navegador que lo trajo: `_fbp`, `_fbc` y la cookie de campaña viajan
+        // en esta request y aquí ya hay un id al que atarlas.
+        //
+        // Sin esto la atribución de reserva nunca se escribía —`/api/meta/track`
+        // solo la guarda si hay sesión, y en el alta todavía no la hay—, así que
+        // quien confirmaba el email desde otro dispositivo generaba un
+        // `CompleteRegistration` sin atribuir a ningún anuncio.
+        async after(creado, context) {
+          await guardarAtribucion(
+            creado.id,
+            atribucionDeHeaders(context?.headers ?? context?.request?.headers),
+          );
+        },
       },
     },
   },

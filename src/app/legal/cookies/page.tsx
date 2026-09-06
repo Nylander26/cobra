@@ -84,6 +84,14 @@ export default function CookiesPage() {
           <strong>_fbc</strong> — de Meta. Guarda el identificador del anuncio
           concreto en el que hiciste clic. Dura 90 días.
         </li>
+        <li>
+          <strong>cobra_campana</strong> — propia. Guarda únicamente los
+          parámetros de campaña que venían en el enlace por el que llegaste
+          (<em>utm_source</em>, <em>utm_campaign</em> y similares), para saber
+          qué anuncio funciona sin depender de la medición de Meta. No contiene
+          ningún dato que te identifique. Dura 30 días y se instala también si
+          aceptas solo la categoría de analítica.
+        </li>
       </ul>
       <p>
         Si aceptas esta categoría, también enviamos a Meta desde nuestros

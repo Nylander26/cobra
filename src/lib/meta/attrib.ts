@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { events } from "@/db/schema";
 import { newId } from "@/lib/ids";
 import type { MetaUserData } from "@/lib/meta/capi";
+import { type Campana, campanaDeCookie } from "@/lib/meta/campana";
 
 // Atribución publicitaria persistida. El problema que resuelve: la venta real
 // ocurre en el webhook de `invoice.paid`, catorce días después del checkout y
@@ -20,10 +21,14 @@ const TIPO_PURCHASE = "meta_purchase_sent";
 export type Atribucion = Pick<
   MetaUserData,
   "fbp" | "fbc" | "clientIp" | "clientUserAgent"
->;
+> & {
+  // De qué anuncio vino. Es el dato que permite cruzar registros con anuncios
+  // en nuestra propia base de datos, sin depender de la atribución de Meta.
+  campana?: Campana | null;
+};
 
 function tieneAlgo(datos: Atribucion) {
-  return Boolean(datos.fbp || datos.fbc);
+  return Boolean(datos.fbp || datos.fbc || datos.campana);
 }
 
 // Atribución sacada de una request cruda, para los sitios donde no hay
@@ -31,8 +36,12 @@ function tieneAlgo(datos: Atribucion) {
 // el usuario abre el enlace del correo en otro dispositivo — de ahí que
 // siempre se combine con la versión guardada en base de datos.
 export function atribucionDeRequest(request?: Request): Atribucion {
-  if (!request) return {};
-  const cookie = request.headers.get("cookie") ?? "";
+  return request ? atribucionDeHeaders(request.headers) : {};
+}
+
+export function atribucionDeHeaders(headers?: Headers | null): Atribucion {
+  if (!headers) return {};
+  const cookie = headers.get("cookie") ?? "";
   const leer = (nombre: string) => {
     const encontrada = cookie
       .split("; ")
@@ -42,9 +51,9 @@ export function atribucionDeRequest(request?: Request): Atribucion {
   return {
     fbp: leer("_fbp"),
     fbc: leer("_fbc"),
-    clientIp:
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-    clientUserAgent: request.headers.get("user-agent"),
+    clientIp: headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+    clientUserAgent: headers.get("user-agent"),
+    campana: campanaDeCookie(cookie),
   };
 }
 
@@ -62,6 +71,23 @@ export async function guardarAtribucion(userId: string, datos: Atribucion) {
   } catch (err) {
     console.error("[meta-attrib] no se pudo guardar la atribución:", err);
   }
+}
+
+// Combina lo de la request con lo guardado, campo a campo: la request manda
+// cuando trae el dato, y la fila de base de datos rellena lo que falte. Sin
+// esto, un usuario que confirma el email desde otro dispositivo llega sin
+// `_fbp` y su alta se reporta a Meta sin atribuir a ningún anuncio.
+export function combinarAtribucion(
+  preferida: Atribucion,
+  respaldo: Atribucion,
+): Atribucion {
+  return {
+    fbp: preferida.fbp ?? respaldo.fbp ?? null,
+    fbc: preferida.fbc ?? respaldo.fbc ?? null,
+    clientIp: preferida.clientIp ?? respaldo.clientIp ?? null,
+    clientUserAgent: preferida.clientUserAgent ?? respaldo.clientUserAgent ?? null,
+    campana: preferida.campana ?? respaldo.campana ?? null,
+  };
 }
 
 export async function leerAtribucion(userId: string): Promise<Atribucion> {

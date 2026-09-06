@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ConsentBanner } from "@/components/consent/consent-banner";
+import { CampanaTracker } from "@/components/campana-tracker";
 import { MetaPixel } from "@/components/meta-pixel";
 import "./globals.css";
 
@@ -72,6 +73,9 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <MetaPixel />
         </Suspense>
+        {/* Guarda de qué anuncio viene la visita. No usa hooks de request, así
+            que no necesita Suspense propio. */}
+        <CampanaTracker />
         <Analytics />
         <SpeedInsights />
       </body>
