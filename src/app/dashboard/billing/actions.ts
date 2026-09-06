@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { guardarAtribucion } from "@/lib/meta/attrib";
 import { enviarEventoMeta } from "@/lib/meta/capi";
+import { getSubscription } from "@/lib/billing";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { requireSession } from "@/lib/session";
 import { isLiveKey, stripe } from "@/lib/stripe";
@@ -77,8 +78,10 @@ export async function startCheckout(
       },
       metadata: { userId: user.id, plan: planId, ...metaMetadata },
     },
-    // El webhook (pendiente) leerá esto para activar el plan tras el pago.
+    // El webhook lee esto en checkout.session.completed para activar el plan.
     metadata: { userId: user.id, plan: planId },
+    // El producto es español; sin esto Stripe sirve el checkout en inglés.
+    locale: "es",
     success_url: `${APP_URL}/dashboard/billing?checkout=success`,
     cancel_url: `${APP_URL}/dashboard/billing?checkout=cancel`,
   });
@@ -104,4 +107,37 @@ export async function startCheckout(
   }
 
   return { url: session.url };
+}
+
+export type PortalResult = { url?: string; error?: string };
+
+// Portal de cliente de Stripe: es el único sitio donde el usuario puede
+// cancelar, cambiar de tarjeta o descargar sus facturas. Sin esto la
+// suscripción solo se puede anular escribiendo a soporte, y el copy que
+// promete "cancela cuando quieras" sería falso.
+export async function openBillingPortal(): Promise<PortalResult> {
+  const { user } = await requireSession();
+  const { stripeCustomerId } = await getSubscription(user.id);
+
+  if (!stripeCustomerId) {
+    return { error: "No hay ninguna suscripción activa que gestionar." };
+  }
+
+  try {
+    const session = await stripe().billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${APP_URL}/dashboard/billing`,
+      locale: "es",
+    });
+    return { url: session.url };
+  } catch (err) {
+    // El portal necesita una configuración guardada en el dashboard de
+    // Stripe. Si falta, la API responde con un error de configuración y el
+    // usuario se quedaría sin saber por qué no se abre nada.
+    console.error("No se pudo abrir el portal de Stripe", err);
+    return {
+      error:
+        "No se pudo abrir la gestión de la suscripción. Inténtalo de nuevo o escríbenos.",
+    };
+  }
 }

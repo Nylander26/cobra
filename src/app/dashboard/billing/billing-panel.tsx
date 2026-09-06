@@ -3,6 +3,7 @@ import { formatCents } from "@/lib/money";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { requireSession } from "@/lib/session";
 import { CheckoutButton } from "./checkout-button";
+import { PortalButton } from "./portal-button";
 
 // Dynamic: reads session + the user's plan/usage. Rendered in <Suspense>.
 export async function BillingPanel() {
@@ -20,16 +21,19 @@ export async function BillingPanel() {
   return (
     <div className="animate-rise space-y-8">
       <div className="rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-neutral-500">Tu plan</p>
             <p className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
               {current.name}
             </p>
           </div>
-          <p className="text-sm text-neutral-500">
-            Facturas activas: {limitLabel}
-          </p>
+          <div className="flex flex-col items-end gap-2">
+            <p className="text-sm text-neutral-500">
+              Facturas activas: {limitLabel}
+            </p>
+            {usage.stripeCustomerId && <PortalButton />}
+          </div>
         </div>
         {usage.limit !== null && (
           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
@@ -95,7 +99,10 @@ export async function BillingPanel() {
       </div>
 
       <p className="text-xs text-neutral-400">
-        Incluye 14 días de prueba sin tarjeta. Puedes cancelar cuando quieras.
+        Incluye 14 días de prueba sin tarjeta.{" "}
+        {usage.stripeCustomerId
+          ? "Cancela cuando quieras desde «Gestionar suscripción»."
+          : "Puedes cancelar cuando quieras."}
       </p>
     </div>
   );
