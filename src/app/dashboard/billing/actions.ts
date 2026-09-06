@@ -11,6 +11,13 @@ import { isLiveKey, stripe } from "@/lib/stripe";
 
 const APP_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
+// Stripe Tax se enciende cuando el alta censal (036) está presentada y la
+// jurisdicción registrada en el panel de Stripe. Antes de eso, pedirle a
+// Stripe que calcule impuestos hace fallar la creación de la sesión y deja
+// el checkout muerto, así que va detrás de una variable y apagado por
+// defecto. Encenderla es un acto deliberado, no el estado inicial.
+const TAX_ENABLED = process.env.STRIPE_TAX_ENABLED === "true";
+
 export type CheckoutResult = { url?: string; error?: string };
 
 // Devuelve la URL de pago en vez de redirigir: el cliente la abre en una
@@ -64,6 +71,10 @@ export async function startCheckout(
           product_data: { name: `Cobra ${plan.name}` },
           unit_amount: plan.priceCents,
           recurring: { interval: "month" },
+          // Los precios anunciados llevan el IVA dentro (12 € = 9,92 € +
+          // 2,08 €), que es como deben mostrarse a consumidores. Sin esto
+          // Stripe Tax rechaza el precio por indefinido.
+          tax_behavior: "inclusive",
         },
       },
     ],
@@ -78,6 +89,15 @@ export async function startCheckout(
       },
       metadata: { userId: user.id, plan: planId, ...metaMetadata },
     },
+    // Con Tax activo Stripe calcula y desglosa el IVA en la factura, que es
+    // lo que convierte el recibo en una factura válida para el cliente.
+    automatic_tax: { enabled: TAX_ENABLED },
+    // Los clientes son autónomos y empresas: sin recoger su NIF no pueden
+    // deducirse la factura y acaban pidiéndola por soporte.
+    tax_id_collection: { enabled: TAX_ENABLED },
+    // Tax necesita la dirección para determinar la jurisdicción; sin ella no
+    // sabe qué tipo aplicar.
+    ...(TAX_ENABLED ? { billing_address_collection: "required" as const } : {}),
     // El webhook lee esto en checkout.session.completed para activar el plan.
     metadata: { userId: user.id, plan: planId },
     // El producto es español; sin esto Stripe sirve el checkout en inglés.
