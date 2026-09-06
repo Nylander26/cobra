@@ -21,10 +21,10 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(true);
-      return;
-    }
+    // Con movimiento reducido no hace falta hacer nada: el estado oculto solo
+    // existe dentro de @media (prefers-reduced-motion: no-preference), así que
+    // el elemento ya se ve. Forzarlo aquí era una escritura de estado dentro
+    // del efecto que no cambiaba nada en pantalla.
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

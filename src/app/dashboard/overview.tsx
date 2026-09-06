@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
+import { ahora } from "@/lib/ahora";
 import { events, invoices } from "@/db/schema";
 import { formatCents } from "@/lib/money";
 import { requireSession } from "@/lib/session";
@@ -36,7 +37,7 @@ export async function Overview() {
   // Al usuario recién llegado le habla <PrimerosPasos />, encima de esto.
   if (invoicesTotal === 0) return null;
 
-  const now = Date.now();
+  const now = await ahora();
   const upcoming = empty();
   const d0_30 = empty();
   const d30_60 = empty();

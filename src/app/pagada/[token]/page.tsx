@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { and, eq } from "drizzle-orm";
 import { CobraMark } from "@/components/logo";
 import { db } from "@/db";
+import { ahora } from "@/lib/ahora";
 import { clients, invoices } from "@/db/schema";
 import { formatCents } from "@/lib/money";
 import { verifyMarkPaidToken } from "@/lib/magic-link";
@@ -68,7 +69,7 @@ async function PagadaCard({
   searchParams: Promise<{ ok?: string }>;
 }) {
   const [{ token }, { ok }] = await Promise.all([params, searchParams]);
-  const payload = verifyMarkPaidToken(token, Date.now());
+  const payload = verifyMarkPaidToken(token, await ahora());
 
   if (!payload) {
     return (

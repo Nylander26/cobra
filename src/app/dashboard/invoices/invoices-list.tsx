@@ -6,6 +6,7 @@ import {
   IconUndo,
 } from "@/components/icons";
 import { db } from "@/db";
+import { ahora } from "@/lib/ahora";
 import { clients, events, invoices } from "@/db/schema";
 import { computeLateInterest } from "@/lib/late-interest";
 import { formatCents } from "@/lib/money";
@@ -105,7 +106,7 @@ export async function InvoicesList() {
     );
   }
 
-  const now = Date.now();
+  const now = await ahora();
 
   return (
     <div className="animate-rise overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
