@@ -15,7 +15,7 @@ const REVISION = "6 de septiembre de 2026";
 // inventado. Rellenarlo cierra el cumplimiento.
 const TITULAR = {
   nombre: "Wolfgang Nylander Tabares",
-  nif: "",
+  nif: "Y9217280K",
   domicilio: "Calle Arroyo Belincoso 30, 28030 Madrid, España",
   email: "soporte@micobra.es",
 };
