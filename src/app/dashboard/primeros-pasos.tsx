@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { and, count, eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { clients, emailDomains, invoices } from "@/db/schema";
+import { clients, invoices } from "@/db/schema";
 import { requireSession } from "@/lib/session";
 
 // Puesta en marcha guiada. No es un tour con burbujas encima de la interfaz:
@@ -9,13 +9,12 @@ import { requireSession } from "@/lib/session";
 // recargar la página y a volver mañana, que es justo cuando un tour ya se ha
 // perdido.
 //
-// El paso del dominio es el que más cuesta y el que decide si el producto
-// funciona: sin dominio verificado los recordatorios salen desde una dirección
-// prestada y acaban en spam. Por eso va antes que la primera factura aunque se
-// pueda facturar sin él.
+// Solo pasos que el usuario puede completar HOY desde la aplicación. Un punto
+// que no se puede marcar nunca deja la tarjeta clavada para siempre y enseña a
+// ignorarla — que es justo lo contrario de lo que se busca.
 //
-// Server component: cuatro `count` contra índices ya existentes. Va en su
-// propio <Suspense> porque lee la sesión.
+// Server component: dos `count` contra índices ya existentes. Va en su propio
+// <Suspense> porque lee la sesión.
 
 type Paso = {
   titulo: string;
@@ -47,26 +46,16 @@ function Marca({ hecho }: { hecho: boolean }) {
 export async function PrimerosPasos() {
   const { user } = await requireSession();
 
-  const [[{ dominios }], [{ clientesTotal }], [{ facturasTotal }]] =
-    await Promise.all([
-      db
-        .select({ dominios: count() })
-        .from(emailDomains)
-        .where(
-          and(
-            eq(emailDomains.userId, user.id),
-            eq(emailDomains.status, "verified"),
-          ),
-        ),
-      db
-        .select({ clientesTotal: count() })
-        .from(clients)
-        .where(eq(clients.userId, user.id)),
-      db
-        .select({ facturasTotal: count() })
-        .from(invoices)
-        .where(eq(invoices.userId, user.id)),
-    ]);
+  const [[{ clientesTotal }], [{ facturasTotal }]] = await Promise.all([
+    db
+      .select({ clientesTotal: count() })
+      .from(clients)
+      .where(eq(clients.userId, user.id)),
+    db
+      .select({ facturasTotal: count() })
+      .from(invoices)
+      .where(eq(invoices.userId, user.id)),
+  ]);
 
   const pasos: Paso[] = [
     {
@@ -76,14 +65,6 @@ export async function PrimerosPasos() {
       href: "/dashboard/soporte",
       cta: "Reenviar el correo",
       hecho: user.emailVerified,
-    },
-    {
-      titulo: "Verifica tu dominio de envío",
-      texto:
-        "Tres registros DNS. Los recordatorios salen desde tu propia dirección y llegan a la bandeja de entrada, no a spam.",
-      href: "/dashboard/marcas",
-      cta: "Verificar mi dominio",
-      hecho: dominios > 0,
     },
     {
       titulo: "Añade tu primer cliente",
