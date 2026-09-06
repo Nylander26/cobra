@@ -38,16 +38,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [error, setError] = useState<string | null>(null);
   // signup: cuenta creada, esperando el click en el email de verificación.
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [noCoincide, setNoCoincide] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setPending(true);
 
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email"));
     const password = String(form.get("password"));
     const name = String(form.get("name") ?? "");
+
+    // Una errata en la contraseña del alta no se descubre hasta el siguiente
+    // inicio de sesión, cuando ya no hay forma de saber qué se escribió: se
+    // comprueba aquí, antes de crear nada.
+    if (mode === "signup" && password !== String(form.get("passwordConfirm"))) {
+      setNoCoincide(true);
+      return;
+    }
+
+    setPending(true);
 
     const result =
       mode === "signup"
@@ -149,15 +159,28 @@ export function AuthForm({ mode }: { mode: Mode }) {
         placeholder="tu@email.com"
         required
       />
-      <Field
+      <CampoContrasena
         label="Contraseña"
         name="password"
-        type="password"
         autoComplete={mode === "signup" ? "new-password" : "current-password"}
-        placeholder="••••••••"
         minLength={8}
         required
       />
+      {mode === "signup" && (
+        <CampoContrasena
+          label="Repite la contraseña"
+          name="passwordConfirm"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          aria-invalid={noCoincide}
+          aria-describedby={noCoincide ? "password-confirm-error" : undefined}
+          onInput={() => setNoCoincide(false)}
+          error={
+            noCoincide ? "Las dos contraseñas no coinciden." : undefined
+          }
+        />
+      )}
 
       {mode === "login" && (
         <p className="text-right text-sm">
@@ -217,6 +240,80 @@ export function AuthForm({ mode }: { mode: Mode }) {
   );
 }
 
+const CLASES_INPUT =
+  "w-full rounded-lg border border-linea bg-white px-3 py-2 text-sm text-tinta outline-none transition placeholder:text-grafito/40 focus:border-cobra focus:ring-1 focus:ring-cobra";
+
+function OjoAbierto() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden="true">
+      <path
+        d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function OjoTachado() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-4" aria-hidden="true">
+      <path
+        d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m4 20 16-16" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+// Contraseña con ojito. Escribir a ciegas en el móvil —de donde viene casi
+// todo el tráfico— es la causa habitual de que alguien se cree una cuenta a la
+// que luego no puede entrar.
+function CampoContrasena({
+  label,
+  error,
+  ...props
+}: { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="space-y-1">
+      <label className="block space-y-1">
+        <span className="text-sm font-medium text-grafito">{label}</span>
+        <span className="relative block">
+          <input
+            {...props}
+            type={visible ? "text" : "password"}
+            placeholder="••••••••"
+            className={`${CLASES_INPUT} pr-11 ${error ? "border-red-400" : ""}`}
+          />
+          <button
+            type="button"
+            // No entra en el orden de tabulación: quien va con teclado quiere
+            // saltar de la contraseña al botón de enviar, no a un interruptor.
+            tabIndex={-1}
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? "Ocultar la contraseña" : "Mostrar la contraseña"}
+            aria-pressed={visible}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-grafito/50 transition hover:text-cobra focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra"
+          >
+            {visible ? <OjoTachado /> : <OjoAbierto />}
+          </button>
+        </span>
+      </label>
+      {error && (
+        <p id="password-confirm-error" className="text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Field({
   label,
   ...props
@@ -224,10 +321,7 @@ function Field({
   return (
     <label className="block space-y-1">
       <span className="text-sm font-medium text-grafito">{label}</span>
-      <input
-        {...props}
-        className="w-full rounded-lg border border-linea bg-white px-3 py-2 text-sm text-tinta outline-none transition placeholder:text-grafito/40 focus:border-cobra focus:ring-1 focus:ring-cobra"
-      />
+      <input {...props} className={CLASES_INPUT} />
     </label>
   );
 }
