@@ -6,6 +6,7 @@ import { subscriptions, user } from "@/db/schema";
 import { newId } from "@/lib/ids";
 import { leerAtribucion, marcarPurchaseEnviado } from "@/lib/meta/attrib";
 import { enviarEventoMeta } from "@/lib/meta/capi";
+import { sendOpsAlert } from "@/lib/ops-alert";
 import { type PlanId, PLANS } from "@/lib/plans";
 import { stripe } from "@/lib/stripe";
 
@@ -147,6 +148,32 @@ export async function POST(req: Request) {
           stripeCustomerId: sub.customer as string,
           stripeSubscriptionId: sub.id,
         });
+
+        // Solo en el alta. El trial de 14 días es el plazo real para tener el
+        // alta censal presentada y Stripe Tax encendido antes de que salga el
+        // primer cobro: sin este aviso hay que estar mirando el panel para
+        // enterarse de que ese reloj ha empezado a correr.
+        if (event.type === "customer.subscription.created") {
+          const [fila] = await db
+            .select({ email: user.email })
+            .from(user)
+            .where(eq(user.id, userId))
+            .limit(1);
+          const finTrial = sub.trial_end
+            ? new Date(sub.trial_end * 1000).toLocaleDateString("es-ES", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : "sin periodo de prueba";
+          await sendOpsAlert("Nueva suscripción", [
+            `Plan: ${PLANS[plan].name} (${PLANS[plan].priceCents / 100} €/mes)`,
+            `Usuario: ${fila?.email ?? userId}`,
+            `Estado: ${sub.status}`,
+            `Primer cobro: ${finTrial}`,
+            `Suscripción: ${sub.id}`,
+          ]);
+        }
       }
       break;
     }
