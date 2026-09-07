@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Spinner } from "@/components/icons";
 import { type ContactoState, enviarConsulta } from "./actions";
 
@@ -9,8 +16,19 @@ const POS_KEY = "cobra_contacto_pos";
 // el dedo siempre se mueve algún píxel, y sin margen el botón no abriría nunca
 // en móvil.
 const UMBRAL_ARRASTRE = 6;
+// Lado del botón flotante (h-14 w-14): el contenedor mide exactamente esto, así
+// el recorte contra la pantalla no depende de si el panel está abierto.
+const LADO_BOTON = 56;
+const MARGEN = 16;
+const HUECO = 12;
+const ANCHO_PANEL = 320;
+const ALTO_MINIMO_PANEL = 200;
 
 type Pos = { x: number; y: number };
+
+// El panel se coloca respecto al botón, no dentro de él: se centra sobre la
+// burbuja, se recorta a la pantalla y se abre hacia el lado con más hueco.
+type Anclaje = { x: number; ancho: number; alto: number; debajo: boolean };
 
 function dentroDePantalla(pos: Pos, ancho: number, alto: number): Pos {
   return {
@@ -19,10 +37,28 @@ function dentroDePantalla(pos: Pos, ancho: number, alto: number): Pos {
   };
 }
 
+function calcularAnclaje(caja: DOMRect): Anclaje {
+  const ancho = Math.min(ANCHO_PANEL, window.innerWidth - MARGEN * 2);
+  const centrado = caja.left + caja.width / 2 - ancho / 2;
+  const maximo = Math.max(MARGEN, window.innerWidth - ancho - MARGEN);
+  const x = Math.min(Math.max(MARGEN, centrado), maximo);
+  const huecoArriba = caja.top - HUECO - MARGEN;
+  const huecoAbajo = window.innerHeight - caja.bottom - HUECO - MARGEN;
+  const debajo = huecoAbajo > huecoArriba;
+  return {
+    // Relativo al contenedor, que es lo que posiciona al panel.
+    x: x - caja.left,
+    ancho,
+    alto: Math.max(ALTO_MINIMO_PANEL, debajo ? huecoAbajo : huecoArriba),
+    debajo,
+  };
+}
+
 export function ContactoFlotante() {
   const [abierto, setAbierto] = useState(false);
   const [pos, setPos] = useState<Pos | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
+  const [anclaje, setAnclaje] = useState<Anclaje | null>(null);
   const contenedor = useRef<HTMLDivElement>(null);
   const gesto = useRef<{ dx: number; dy: number; movido: boolean } | null>(null);
 
@@ -42,7 +78,11 @@ export function ContactoFlotante() {
         if (typeof guardada?.x === "number" && typeof guardada?.y === "number") {
           const caja = contenedor.current?.getBoundingClientRect();
           setPos(
-            dentroDePantalla(guardada, caja?.width ?? 56, caja?.height ?? 56),
+            dentroDePantalla(
+              guardada,
+              caja?.width ?? LADO_BOTON,
+              caja?.height ?? LADO_BOTON,
+            ),
           );
         }
       }
@@ -52,18 +92,33 @@ export function ContactoFlotante() {
   }, []);
 
   // Si la ventana encoge, lo arrastrado ayer puede quedar fuera de la pantalla
-  // de hoy y volverse inalcanzable.
+  // de hoy y volverse inalcanzable; y el panel abierto deja de caber donde
+  // estaba.
   useEffect(() => {
-    if (!pos) return;
     function alRedimensionar() {
       const caja = contenedor.current?.getBoundingClientRect();
       setPos((p) =>
-        p ? dentroDePantalla(p, caja?.width ?? 56, caja?.height ?? 56) : p,
+        p
+          ? dentroDePantalla(
+              p,
+              caja?.width ?? LADO_BOTON,
+              caja?.height ?? LADO_BOTON,
+            )
+          : p,
       );
+      if (caja) setAnclaje(calcularAnclaje(caja));
     }
     window.addEventListener("resize", alRedimensionar);
     return () => window.removeEventListener("resize", alRedimensionar);
-  }, [pos]);
+  }, []);
+
+  // Antes de pintar, para que el panel no aparezca nunca en una posición que
+  // luego se corrige a ojos del usuario.
+  useLayoutEffect(() => {
+    if (!abierto) return;
+    const caja = contenedor.current?.getBoundingClientRect();
+    if (caja) setAnclaje(calcularAnclaje(caja));
+  }, [abierto, pos]);
 
   useEffect(() => {
     if (!abierto) return;
@@ -128,7 +183,7 @@ export function ContactoFlotante() {
     <div
       ref={contenedor}
       style={estilo}
-      className={`fixed right-4 bottom-4 z-40 flex flex-col items-end gap-3 ${
+      className={`fixed right-4 bottom-4 z-40 h-14 w-14 ${
         arrastrando ? "select-none" : ""
       }`}
     >
@@ -136,7 +191,13 @@ export function ContactoFlotante() {
         <div
           role="dialog"
           aria-label="Contacto"
-          className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+          style={{
+            left: anclaje?.x ?? 0,
+            width: anclaje?.ancho,
+            maxHeight: anclaje?.alto,
+            [anclaje?.debajo ? "top" : "bottom"]: `calc(100% + ${HUECO}px)`,
+          }}
+          className="absolute overflow-y-auto overscroll-contain rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
         >
           {estado.ok ? (
             <div className="space-y-2">
