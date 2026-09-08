@@ -503,6 +503,16 @@ function Revision({
         </p>
       )}
 
+      <p className="mt-6 rounded-lg border border-cobra/30 bg-cobra/5 p-4 text-sm leading-relaxed text-grafito">
+        <strong className="font-semibold text-tinta">
+          Antes de mandarlo:
+        </strong>{" "}
+        lo que vas a descargar es un modelo orientativo, no asesoramiento
+        jurídico. Cobra no revisa ni avala el texto; revísalo con tu abogado
+        antes de llevarlo a Correos. El PDF empieza con una hoja de
+        instrucciones que no se envía.
+      </p>
+
       <div className="mt-6 flex items-center justify-between gap-3">
         <button
           type="button"
@@ -637,9 +647,8 @@ function Exito({ state }: { state: BurofaxState }) {
       )}
 
       <p className="mt-6 text-xs leading-relaxed text-grafito/60">
-        Este documento es orientativo y no constituye asesoramiento jurídico. Si
-        la deuda es alta o el deudor ya ha discutido la factura, consulta con un
-        abogado antes de enviarlo.{" "}
+        Los intereses de demora salen del tipo legal publicado por el BOE para
+        cada semestre desde el vencimiento.{" "}
         <Link
           href="/calculadora-intereses-demora"
           className="text-cobra underline decoration-cobra/40 underline-offset-4"

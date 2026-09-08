@@ -197,6 +197,16 @@ export default function BurofaxPage() {
             con los intereses ya calculados.
           </p>
 
+          <p className="mt-6 max-w-2xl rounded-lg border border-cobra/30 bg-cobra/5 p-4 text-sm leading-relaxed text-grafito">
+            <strong className="font-semibold text-tinta">
+              Es un modelo orientativo:
+            </strong>{" "}
+            Cobra te da la plantilla y los cálculos, no asesoramiento jurídico.
+            No revisamos ni avalamos el texto, así que revísalo con tu abogado
+            antes de enviarlo — sobre todo si la deuda es alta o el deudor ya ha
+            discutido la factura.
+          </p>
+
           <div className="mt-10">
             <Generador />
           </div>

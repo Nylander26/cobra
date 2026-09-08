@@ -6,6 +6,7 @@ import {
   View,
   renderToBuffer,
 } from "@react-pdf/renderer";
+import { formatearFecha } from "./plazos";
 import type { CartaBurofax } from "./texto";
 
 // El documento que el usuario lleva a Correos. Se compone con las fuentes
@@ -114,7 +115,107 @@ const s = StyleSheet.create({
     color: SUAVE,
     lineHeight: 1.4,
   },
+  aviso: {
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: TINTA,
+    padding: 14,
+  },
+  avisoTitulo: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+    color: TINTA,
+    marginBottom: 7,
+  },
+  seccion: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 7.5,
+    letterSpacing: 1,
+    color: SUAVE,
+    marginTop: 26,
+    marginBottom: 2,
+  },
+  hito: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: LINEA,
+    paddingVertical: 6,
+  },
+  hitoFecha: { fontFamily: "Times-Bold", color: TINTA },
 });
+
+// La primera página no es la carta: es la hoja que Cobra le escribe al usuario
+// para decirle, donde lo va a leer, que lo que lleva debajo es un modelo y que
+// lo revise su abogado. Va aquí y no en el cuerpo del requerimiento porque el
+// cuerpo lo lee el deudor, y un requerimiento que se presenta a sí mismo como
+// orientativo se responde solo.
+function HojaPrevia({ carta }: { carta: CartaBurofax }) {
+  const hitos = [
+    {
+      etiqueta: "El plazo que da la carta vence el",
+      valor: formatearFecha(carta.venceElPlazo),
+    },
+    { etiqueta: "Puede recuperar el IVA desde", valor: carta.iva.desde },
+    { etiqueta: "Último día para recuperarlo", valor: carta.iva.hasta },
+  ];
+
+  return (
+    <Page size="A4" style={s.page}>
+      <View style={s.cabecera}>
+        <Text style={s.titulo}>ANTES DE ENVIARLO</Text>
+        <Text style={s.fecha}>Esta hoja no se envía</Text>
+      </View>
+
+      <View style={s.aviso}>
+        <Text style={s.avisoTitulo}>ESTO ES UN MODELO ORIENTATIVO</Text>
+        <Text>
+          Revíselo con su abogado antes de enviarlo. Cobra le da una plantilla,
+          no asesoramiento jurídico: no revisamos ni avalamos este texto, y si
+          la deuda es alta o el deudor ya ha discutido la factura, esa revisión
+          no es opcional.
+        </Text>
+        <Text style={s.parrafo}>
+          Compruebe usted mismo los nombres, los NIF y el domicilio del
+          destinatario. Una errata ahí deja la reclamación dirigida a nadie, y
+          eso no lo arregla el acuse de recibo.
+        </Text>
+      </View>
+
+      <Text style={s.seccion}>CÓMO ENVIARLO</Text>
+      <Text style={s.parrafo}>
+        Imprima solo las páginas siguientes y llévelas a una oficina de Correos
+        —o al operador postal que utilice—. Pida el envío como burofax con
+        certificación de texto y acuse de recibo: sin esas dos opciones la carta
+        se entrega, pero no queda constancia de qué decía ni de que llegó, que
+        es exactamente lo que interrumpe la prescripción de la deuda y lo que
+        acredita la reclamación ante Hacienda.
+      </Text>
+      <Text style={s.parrafo}>
+        Guarde el resguardo y el acuse de recibo junto a la factura. Son la
+        prueba con la que se inicia un proceso monitorio si el plazo vence sin
+        pago.
+      </Text>
+
+      <Text style={s.seccion}>FECHAS CLAVE</Text>
+      {hitos.map((h) => (
+        <View key={h.etiqueta} style={s.hito}>
+          <Text>{h.etiqueta}</Text>
+          <Text style={s.hitoFecha}>{h.valor}</Text>
+        </View>
+      ))}
+
+      <Text style={s.pie} fixed>
+        Hoja de instrucciones generada con Cobra (micobra.es). No forma parte
+        del requerimiento: el documento que se envía empieza en la página
+        siguiente.
+      </Text>
+    </Page>
+  );
+}
 
 function BurofaxDoc({ carta }: { carta: CartaBurofax }) {
   return (
@@ -124,6 +225,8 @@ function BurofaxDoc({ carta }: { carta: CartaBurofax }) {
       subject="Requerimiento fehaciente de pago"
       language="es-ES"
     >
+      <HojaPrevia carta={carta} />
+
       <Page size="A4" style={s.page}>
         <View style={s.cabecera}>
           <Text style={s.titulo}>REQUERIMIENTO FEHACIENTE DE PAGO</Text>
