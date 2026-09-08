@@ -47,14 +47,71 @@ const FAQS = [
   },
 ];
 
-const faqJsonLd = {
+const URL_PAGINA = "https://micobra.es/calculadora-intereses-demora";
+
+// Un solo bloque con @graph en vez de tres <script> sueltos: los nodos se
+// referencian entre sí por @id (la app cita a su editor, el FAQ cuelga de la
+// página) y Google lee una única estructura coherente en lugar de tres islas.
+//
+// FAQPage abre el rich result de preguntas; SoftwareApplication es lo que hace
+// que la página compita como herramienta —con precio 0, que es el dato que
+// mira Google para no pedir más señales—; BreadcrumbList da la miga de pan en
+// el resultado en vez de la URL cruda.
+const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQS.map((f) => ({
-    "@type": "Question",
-    name: f.q,
-    acceptedAnswer: { "@type": "Answer", text: f.a },
-  })),
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://micobra.es/#organization",
+      name: "Cobra",
+      url: "https://micobra.es",
+      description:
+        "Recordatorios de cobro automáticos para autónomos y estudios en España.",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${URL_PAGINA}#app`,
+      name: "Calculadora de intereses de demora",
+      url: URL_PAGINA,
+      applicationCategory: "FinanceApplication",
+      operatingSystem: "Web",
+      inLanguage: "es-ES",
+      description:
+        "Calcula el interés de demora de una factura impagada aplicando el tipo legal del BOE de cada semestre, más la compensación fija de 40 € por costes de cobro del artículo 8 de la Ley 3/2004.",
+      // Gratis y sin registro: las dos objeciones que decide alguien antes de
+      // hacer clic en un resultado de búsqueda.
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+      isAccessibleForFree: true,
+      publisher: { "@id": "https://micobra.es/#organization" },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${URL_PAGINA}#breadcrumb`,
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Cobra",
+          item: "https://micobra.es",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Calculadora de intereses de demora",
+          item: URL_PAGINA,
+        },
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${URL_PAGINA}#faq`,
+      mainEntity: FAQS.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    },
+  ],
 };
 
 export default function CalculadoraPage() {
@@ -63,7 +120,7 @@ export default function CalculadoraPage() {
       <script
         type="application/ld+json"
         // JSON generado desde constantes propias, sin input del usuario.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="mx-auto w-full max-w-3xl px-6">
         <header className="flex h-20 items-center justify-between">
