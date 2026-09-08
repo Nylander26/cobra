@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // Superficie privada o con token: nada que indexar.
-        disallow: ["/dashboard", "/api/", "/pagada/"],
+        disallow: ["/dashboard", "/api/", "/pagada/", "/onboarding/"],
       },
     ],
     sitemap: "https://micobra.es/sitemap.xml",

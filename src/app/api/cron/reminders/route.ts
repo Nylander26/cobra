@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { sendDueOwnerAlerts } from "@/lib/burofax/avisos";
+import { purgarBorradores } from "@/lib/burofax/borradores";
 import { sendOpsAlert } from "@/lib/ops-alert";
 import { sendDueReminders } from "@/lib/reminders/send";
 
@@ -12,9 +14,19 @@ export async function GET(req: Request) {
 
   try {
     const summary = await sendDueReminders();
+
+    // Segunda pasada, deliberadamente separada de la primera: estos avisos van
+    // al USUARIO sobre los plazos legales de su burofax, no al deudor. Comparten
+    // cron porque comparten cadencia diaria, nada más — si uno de los dos
+    // revienta, el otro ya ha corrido o corre igual mañana.
+    const ahora = new Date();
+    const avisos = await sendDueOwnerAlerts(ahora);
+    // Y de paso se barren los borradores de burofax caducados: datos personales
+    // de terceros que ya no tienen ninguna razón para seguir ahí.
+    const borradosPurgados = await purgarBorradores(ahora);
     // Solo hay correo cuando algo va mal: fallos de envío, o un usuario
     // chocando con su tope diario (señal de posible abuso).
-    if (summary.failed > 0 || summary.capped > 0) {
+    if (summary.failed > 0 || summary.capped > 0 || avisos.fallidos > 0) {
       await sendOpsAlert(
         `recordatorios: ${summary.failed} fallidos, ${summary.capped} al tope`,
         [
@@ -24,10 +36,11 @@ export async function GET(req: Request) {
           `- fallidos: ${summary.failed} (se reintentan en el próximo run)`,
           `- pospuestos por tope diario: ${summary.capped}`,
           `- transporte: ${summary.transport}`,
+          `- avisos al usuario: ${avisos.enviados} enviados, ${avisos.fallidos} fallidos`,
         ],
       );
     }
-    return NextResponse.json(summary);
+    return NextResponse.json({ ...summary, avisos, borradosPurgados });
   } catch (err) {
     await sendOpsAlert("el cron de recordatorios ha fallado entero", [
       `Error no controlado en /api/cron/reminders (${new Date().toISOString()}):`,

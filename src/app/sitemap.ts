@@ -9,6 +9,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: base, priority: 1 },
     { url: `${base}/calculadora-intereses-demora`, priority: 0.9 },
     { url: `${base}/carta-reclamacion-factura-impagada`, priority: 0.9 },
+    {
+      url: `${base}/modelo-burofax-reclamacion-factura-impagada`,
+      priority: 0.9,
+    },
     { url: `${base}/signup`, priority: 0.5 },
     { url: `${base}/legal/aviso-legal`, priority: 0.1 },
     { url: `${base}/legal/privacidad`, priority: 0.1 },

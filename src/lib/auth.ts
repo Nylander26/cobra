@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { magicLink } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -191,4 +192,50 @@ Si no has creado esta cuenta, ignora este mensaje.
       },
     },
   },
+  plugins: [
+    // Alta sin contraseña para quien llega desde una herramienta pública. El
+    // generador de burofax no puede pedir "nombre, contraseña y confirma el
+    // correo" a alguien que acaba de rellenar doce campos: el enlace mágico
+    // cuesta exactamente lo mismo que dejar el correo —un campo— y a cambio
+    // deja una cuenta con sus datos dentro en vez de una fila en `leads`.
+    magicLink({
+      // 72 horas, no los 5 minutos por defecto: este enlace viaja en un correo
+      // que la gente abre al día siguiente desde otro dispositivo, y caduca a
+      // la vez que el borrador que va a reclamar. Es un enlace de sesión con
+      // una vida larga, así que se emite solo hacia direcciones que acaban de
+      // pedirlo y se consume en el primer uso.
+      expiresIn: 72 * 60 * 60,
+      rateLimit: { window: 3600, max: 5 },
+      async sendMagicLink({ email, url, metadata }) {
+        // El burofax manda su propio correo: lleva el PDF adjunto y habla de
+        // los plazos legales de esa factura concreta, no de "entra en tu
+        // cuenta". Se resuelve por metadata para que el día que haya un
+        // segundo flujo sin contraseña cada uno tenga su texto.
+        if (metadata?.flujo === "burofax" && metadata.claimToken) {
+          const { enviarCorreoBurofax } = await import("@/lib/burofax/correo");
+          await enviarCorreoBurofax(email, String(metadata.claimToken), url);
+          return;
+        }
+
+        await getTransport().send({
+          to: email,
+          from: "Cobra <soporte@micobra.es>",
+          subject: "Tu enlace para entrar en Cobra",
+          text: `Entra en tu cuenta de Cobra con este enlace:\n\n${url}\n\nSi no lo has pedido tú, ignora este mensaje.\n`,
+          html: renderCobraEmail({
+            preheader: "Un clic y estás dentro.",
+            eyebrow: "Acceso a Cobra",
+            heading: "Entra en tu cuenta",
+            paragraphs: [
+              "Este enlace te deja dentro sin contraseña. Solo funciona una vez.",
+            ],
+            cta: { label: "Entrar en Cobra", url },
+            fallbackUrl: url,
+            footer:
+              "Si no has pedido este enlace, ignora el mensaje: nadie ha entrado en tu cuenta.",
+          }),
+        });
+      },
+    }),
+  ],
 });

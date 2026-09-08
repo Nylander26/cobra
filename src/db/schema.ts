@@ -329,3 +329,75 @@ export const leads = pgTable(
   },
   (t) => [index("leads_created_idx").on(t.createdAt)],
 );
+
+// ---------------------------------------------------------------------------
+// Generador de burofax
+// ---------------------------------------------------------------------------
+
+// El burofax que alguien acaba de generar en la web pública, guardado el
+// tiempo justo para que pueda reclamarlo desde otro dispositivo: genera el PDF
+// en el móvil y abre el enlace del correo en el portátil.
+//
+// Contiene datos personales de un tercero —el deudor— que nunca ha visitado
+// Cobra, así que el payload va cifrado (AES-256-GCM, src/lib/burofax/crypto.ts)
+// y la fila se borra al reclamarla o al caducar. Antes de que el usuario deje
+// su correo no se escribe nada aquí: hasta ese momento el flujo es anónimo de
+// verdad y los datos del deudor viven solo en su navegador.
+export const burofaxDrafts = pgTable(
+  "burofax_drafts",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    payload: text("payload").notNull(),
+    iv: text("iv").notNull(),
+    // Lo que viaja en el enlace del correo y en el botón de la página de
+    // éxito. Es el mismo para los dos: quien pulse en cualquiera de ellos
+    // acaba en la misma cuenta en vez de crear dos registros.
+    claimToken: text("claim_token").notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    claimedAt: timestamp("claimed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("burofax_drafts_expira_idx").on(t.expiresAt)],
+);
+
+export const ownerAlertKind = pgEnum("owner_alert_kind", [
+  // Vence el plazo que la carta le dio al deudor para pagar.
+  "burofax_plazo",
+  // Se abre la ventana para modificar la base imponible y recuperar el IVA.
+  "iva_apertura",
+  // Se cierra esa ventana. Pasada, el IVA adelantado no se recupera.
+  "iva_cierre",
+  // Ha pasado un mes desde el plazo sin noticias: toca decidir si monitorio.
+  "monitorio",
+  // Se acerca de nuevo la prescripción interrumpida por este burofax.
+  "prescripcion",
+]);
+
+// Avisos que Cobra le manda AL USUARIO sobre sus propios plazos legales.
+//
+// Tabla aparte de `reminders` a propósito, y esto no es duplicación: los
+// recordatorios escriben al DEUDOR en nombre del usuario y desde su dominio.
+// Un aviso que se colara por ese camino le mandaría a alguien que acaba de
+// recibir un burofax un correo que su acreedor no ha visto. La separación
+// física de las tablas y de los envíos es lo que hace ese error imposible.
+export const ownerAlerts = pgTable(
+  "owner_alerts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    invoiceId: text("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    kind: ownerAlertKind("kind").notNull(),
+    scheduledAt: timestamp("scheduled_at").notNull(),
+    sentAt: timestamp("sent_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("owner_alerts_due_idx").on(t.scheduledAt, t.sentAt),
+    index("owner_alerts_user_idx").on(t.userId),
+  ],
+);

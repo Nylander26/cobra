@@ -43,6 +43,13 @@
       "when": 1788866223315,
       "tag": "0005_whole_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788896148606,
+      "tag": "0006_colossal_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

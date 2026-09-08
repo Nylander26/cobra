@@ -6,6 +6,10 @@ export type SendEmailInput = {
   text: string;
   // Alternativa HTML opcional (marcas con branding); text va siempre.
   html?: string;
+  // Ficheros adjuntos (el PDF del burofax). `content` va en base64. Los
+  // recordatorios no adjuntan nada: esto es para los correos que Cobra manda a
+  // sus propios usuarios con un documento que acaban de generar.
+  attachments?: { filename: string; content: string }[];
 };
 
 export interface EmailTransport {
@@ -20,7 +24,7 @@ class DryRunTransport implements EmailTransport {
   readonly name = "dry-run";
   async send(input: SendEmailInput): Promise<{ id: string }> {
     console.log(
-      `[dry-run email] to=${input.to} from="${input.from}" reply-to=${input.replyTo ?? "-"} subject="${input.subject}"`,
+      `[dry-run email] to=${input.to} from="${input.from}" reply-to=${input.replyTo ?? "-"} subject="${input.subject}" adjuntos=${input.attachments?.map((a) => a.filename).join(",") ?? "-"}`,
     );
     return { id: `dryrun_${crypto.randomUUID()}` };
   }
@@ -44,6 +48,7 @@ class ResendTransport implements EmailTransport {
         subject: input.subject,
         text: input.text,
         html: input.html,
+        attachments: input.attachments,
       }),
     });
 
