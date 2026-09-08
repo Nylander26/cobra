@@ -5,6 +5,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { renderCobraEmail } from "@/lib/email/cobra-template";
 import { getTransport } from "@/lib/email/transport";
+import { marcarLeadConvertido } from "@/lib/leads";
 import {
   atribucionDeHeaders,
   atribucionDeRequest,
@@ -181,6 +182,11 @@ Si no has creado esta cuenta, ignora este mensaje.
             creado.id,
             atribucionDeHeaders(context?.headers ?? context?.request?.headers),
           );
+          // Si este correo ya había pasado por la calculadora, el alta cierra
+          // su embudo. Sin esta línea la tabla `leads` diría cuántos correos se
+          // capturan pero no cuántos acaban en cuenta, que es lo único que
+          // decide si la herramienta paga los anuncios.
+          await marcarLeadConvertido(creado.email, creado.id);
         },
       },
     },

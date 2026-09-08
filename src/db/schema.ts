@@ -298,3 +298,34 @@ export const subscriptions = pgTable("subscriptions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// Correo capturado por una herramienta pública (hoy, la calculadora de
+// intereses). Tabla propia y no `events` por dos razones: allí `user_id` es
+// NOT NULL y aquí, por definición, todavía no hay cuenta —ese es justo el
+// punto de un lead—, y porque el importe calculado es la cualificación del
+// contacto, no un dato de auditoría.
+export const leads = pgTable(
+  "leads",
+  {
+    id: text("id").primaryKey(),
+    // Único: si la misma persona vuelve a calcular, se actualiza su fila. Dos
+    // filas del mismo correo contarían como dos leads y falsearían el coste
+    // por lead de la campaña.
+    email: text("email").notNull().unique(),
+    source: text("source").notNull(),
+    // Lo que acababa de calcular. Un impago de 8.000 € y otro de 200 € no son
+    // el mismo contacto aunque los dos dejen el correo.
+    amountCents: integer("amount_cents"),
+    claimableCents: integer("claimable_cents"),
+    dueDate: timestamp("due_date"),
+    // De qué anuncio vino, con la misma forma que `Campana` de @/lib/meta.
+    campana: jsonb("campana"),
+    // Se rellenan cuando el lead acaba abriendo cuenta: es lo que convierte la
+    // tabla en un embudo medible y no en una lista de correos suelta.
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    convertedAt: timestamp("converted_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("leads_created_idx").on(t.createdAt)],
+);

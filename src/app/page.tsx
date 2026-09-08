@@ -165,15 +165,25 @@ export default function Home() {
               >
                 Empezar gratis
               </Link>
+              {/* Segunda salida deliberada. Quien llega frío desde un anuncio
+                  no abre una cuenta: la calculadora le da un número sobre SU
+                  factura sin pedirle nada, y de ahí sale el correo. El ancla
+                  interna, que no convertía nada, baja a enlace de texto. */}
+              <Link
+                href="/calculadora-intereses-demora"
+                className="rounded-lg border border-marfil/25 px-6 py-3 text-sm font-medium text-marfil transition hover:border-marfil/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marfil"
+              >
+                Calcular lo que te deben
+              </Link>
+            </div>
+            <p className="animate-rise-3 mt-5 font-mono text-xs text-musgo">
+              2 facturas en seguimiento gratis · Sin tarjeta ·{" "}
               <a
                 href="#como-funciona"
-                className="rounded-lg border border-marfil/25 px-6 py-3 text-sm font-medium text-marfil transition hover:border-marfil/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marfil"
+                className="underline underline-offset-4 transition hover:text-marfil"
               >
                 Ver cómo funciona
               </a>
-            </div>
-            <p className="animate-rise-3 mt-5 font-mono text-xs text-musgo">
-              2 facturas en seguimiento gratis · Sin tarjeta
             </p>
           </div>
         </div>

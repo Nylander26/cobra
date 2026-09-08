@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   computeLateInterest,
   type LateInterest,
 } from "@/lib/late-interest";
-import { trackPixel } from "@/lib/meta/client";
+import { trackMeta, trackPixel } from "@/lib/meta/client";
 import { formatCents, parseAmountToCents } from "@/lib/money";
+import { type CalculoState, enviarCalculo } from "./actions";
 
-type Result = LateInterest & { amountCents: number };
+// `dueRaw` viaja con el resultado porque el formulario de envío lo reenvía al
+// servidor: allí el cálculo se rehace de cero y no se fía de estas cifras.
+type Result = LateInterest & { amountCents: number; dueRaw: string };
 
 // El cálculo corre solo en el handler (nunca en render): "hoy" se decide al
 // pulsar el botón y la página queda 100 % estática.
@@ -45,7 +48,11 @@ export function Calculator() {
       return;
     }
 
-    setResult({ ...computeLateInterest(amountCents, dueDate, asOf), amountCents });
+    setResult({
+      ...computeLateInterest(amountCents, dueDate, asOf),
+      amountCents,
+      dueRaw,
+    });
 
     // Solo píxel: es un visitante anónimo, sin email, así que la CAPI aportaría
     // poco y costaría una request. Se manda el uso real de la herramienta, no
@@ -167,8 +174,122 @@ export function Calculator() {
               )}
             </div>
           )}
+
+          <CapturaEmail
+            // Recalcular otra factura tiene que devolver el formulario: sin la
+            // key, el "te lo hemos enviado" del cálculo anterior se queda fijo.
+            key={`${result.amountCents}-${result.dueRaw}`}
+            importe={String(result.amountCents / 100).replace(".", ",")}
+            vencimiento={result.dueRaw}
+            total={result.totalCents}
+          />
         </div>
       )}
     </div>
+  );
+}
+
+// El registro es demasiado para quien acaba de llegar de un anuncio: pide
+// nombre, contraseña y confirmar el correo antes de haber recibido nada. Aquí
+// el intercambio es directo —el desglose que acaba de ver, en su bandeja— y
+// deja un contacto cualificado con el que seguir hablando.
+function CapturaEmail({
+  importe,
+  vencimiento,
+  total,
+}: {
+  importe: string;
+  vencimiento: string;
+  total: number;
+}) {
+  const [state, formAction, pending] = useActionState<CalculoState, FormData>(
+    enviarCalculo,
+    {},
+  );
+
+  useEffect(() => {
+    if (!state.ok) return;
+    // El evento que de verdad hay que optimizar en Meta mientras el volumen de
+    // altas sea de un puñado al día: llega con email, así que se manda por los
+    // dos canales para que sobreviva al adblock y a iOS.
+    void trackMeta("Lead", {
+      customData: {
+        content_name: "calculadora-intereses-demora",
+        value: total / 100,
+        currency: "EUR",
+      },
+    });
+  }, [state.ok, total]);
+
+  if (state.ok) {
+    return (
+      <div
+        className="mt-6 rounded-xl border border-cobra/30 bg-cobra/5 p-4"
+        aria-live="polite"
+      >
+        <p className="text-sm font-medium text-tinta">
+          Te lo hemos enviado. Revisa tu bandeja (y la carpeta de spam, la
+          primera vez).
+        </p>
+        <p className="mt-1 text-sm text-grafito">
+          Dentro tienes el desglose completo para pegarlo en tu reclamación.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={formAction}
+      className="mt-6 rounded-xl border border-linea bg-marfil/60 p-4 sm:p-5"
+    >
+      <input type="hidden" name="importe" value={importe} />
+      <input type="hidden" name="vencimiento" value={vencimiento} />
+      <p className="text-sm font-medium text-tinta">
+        ¿Te enviamos este desglose por correo?
+      </p>
+      <p className="mt-1 text-sm text-grafito">
+        Con los tipos de cada semestre y el detalle de días, listo para pegarlo
+        en tu reclamación. Sin crear cuenta.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <label className="sr-only" htmlFor="lead-email">
+          Tu correo electrónico
+        </label>
+        <input
+          id="lead-email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="tu@correo.com"
+          className="w-full rounded-lg border border-linea bg-white px-3 py-2 text-sm text-tinta outline-none transition placeholder:text-grafito/40 focus:border-cobra focus:ring-1 focus:ring-cobra"
+        />
+        <input
+          type="text"
+          name="empresa"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="hidden"
+        />
+        <button
+          type="submit"
+          disabled={pending}
+          className="shrink-0 rounded-lg bg-cobra px-5 py-2 text-sm font-medium text-white transition hover:bg-cobra-oscuro disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra"
+        >
+          {pending ? "Enviando…" : "Enviármelo"}
+        </button>
+      </div>
+      {state.error && (
+        <p className="mt-2 text-sm text-red-600" role="alert">
+          {state.error}
+        </p>
+      )}
+      <p className="mt-2 text-xs text-grafito/60">
+        Solo para enviarte este cálculo. Nada de listas ni de correos que no
+        hayas pedido.
+      </p>
+    </form>
   );
 }
