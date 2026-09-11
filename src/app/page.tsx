@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { BotonPreferencias } from "@/components/consent/boton-preferencias";
 import { CobraMark } from "@/components/logo";
 import { Reveal } from "@/components/reveal";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
 import { ComoFunciona } from "./como-funciona";
+import { RegistroVisita } from "./registro-visita";
 import { HeroWave } from "./hero-wave";
 
 // Tipo legal vigente. Mantener en sintonía con RATES (src/lib/late-interest.ts):
@@ -546,6 +548,10 @@ export default function Home() {
           </footer>
         </div>
       </section>
+      {/* Deja en el log del servidor con qué navegador llega cada visita. */}
+      <Suspense fallback={null}>
+        <RegistroVisita punto="home" />
+      </Suspense>
     </main>
   );
 }
