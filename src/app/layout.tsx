@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ConsentBanner } from "@/components/consent/consent-banner";
+import { ContactoFlotante } from "@/components/contacto/contacto-flotante";
 import { CampanaTracker } from "@/components/campana-tracker";
 import { MetaPixel } from "@/components/meta-pixel";
 import "./globals.css";
@@ -66,6 +67,11 @@ export default function RootLayout({
         {children}
         {/* El banner lee la cookie solo en el navegador: no fuerza dinamismo. */}
         <ConsentBanner />
+        {/* El contacto vive en el layout, no en la home: el visitante llega por
+            la calculadora o por el generador de burofax tan a menudo como por
+            la portada, y ahí es donde pregunta. Solo toca localStorage dentro
+            de efectos, así que no fuerza dinamismo. */}
+        <ContactoFlotante />
         {/* El píxel sí usa usePathname() (un PageView por navegación), que es
             un valor de request. Aislado en su propio Suspense, el resto de la
             página se sigue prerenderizando; el fallback es null porque este

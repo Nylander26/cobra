@@ -67,7 +67,10 @@ export function ConsentBanner() {
   }
 
   return (
+    // `data-barra-inferior` lo leen los flotantes para apartarse de la barra en
+    // lugar de quedarse debajo: ver ContactoFlotante.
     <div
+      data-barra-inferior=""
       role="dialog"
       aria-labelledby={tituloId}
       aria-describedby={descripcionId}

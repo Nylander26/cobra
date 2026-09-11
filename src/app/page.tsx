@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { BotonPreferencias } from "@/components/consent/boton-preferencias";
-import { ContactoFlotante } from "@/components/contacto/contacto-flotante";
 import { CobraMark } from "@/components/logo";
 import { Reveal } from "@/components/reveal";
 import { PLAN_ORDER, PLANS } from "@/lib/plans";
@@ -547,8 +546,6 @@ export default function Home() {
           </footer>
         </div>
       </section>
-
-      <ContactoFlotante />
     </main>
   );
 }
