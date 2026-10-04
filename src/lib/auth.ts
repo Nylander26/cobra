@@ -8,6 +8,7 @@ import { renderCobraEmail } from "@/lib/email/cobra-template";
 import { getTransport } from "@/lib/email/transport";
 import { marcarLeadConvertido } from "@/lib/leads";
 import {
+  type Atribucion,
   atribucionDeHeaders,
   atribucionDeRequest,
   combinarAtribucion,
@@ -28,8 +29,50 @@ const vercelOrigins = [
   .filter((host): host is string => Boolean(host))
   .map((host) => `https://${host}`);
 
+// Datos del alta que Meta necesita para atribuirla. Compartido por las dos
+// puertas de activación: el enlace de verificación y el alta con Google.
+async function reportarAlta(
+  usuario: { id: string; email: string },
+  atribucionRequest: Atribucion,
+) {
+  const atribucion = combinarAtribucion(
+    atribucionRequest,
+    await leerAtribucion(usuario.id),
+  );
+  await enviarEventoMeta({
+    eventName: "CompleteRegistration",
+    // Determinista: un reintento no cuenta como un alta más.
+    eventId: `reg_${usuario.id}`,
+    actionSource: "system_generated",
+    userData: {
+      email: usuario.email,
+      externalId: usuario.id,
+      fbp: atribucion.fbp,
+      fbc: atribucion.fbc,
+      clientIp: atribucion.clientIp,
+      clientUserAgent: atribucion.clientUserAgent,
+    },
+  });
+}
+
+// "Continuar con Google" solo si hay credenciales: en local y en previews sin
+// ellas, el botón no se pinta (ver las páginas de login y signup).
+const google =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          // Siempre el selector de cuentas: quien tiene la personal y la del
+          // trabajo en el mismo navegador tiene que poder elegir.
+          prompt: "select_account" as const,
+        },
+      }
+    : undefined;
+
 export const auth = betterAuth({
   trustedOrigins: vercelOrigins,
+  socialProviders: google,
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
@@ -108,24 +151,7 @@ El enlace caduca en 1 hora. Si no lo has pedido tú, ignora este mensaje: tu con
     // Por eso la atribución se combina —cookies de esta request si las hay, y
     // si no las guardadas cuando sí había navegador—.
     async afterEmailVerification(verificado, request) {
-      const atribucion = combinarAtribucion(
-        atribucionDeRequest(request),
-        await leerAtribucion(verificado.id),
-      );
-      await enviarEventoMeta({
-        eventName: "CompleteRegistration",
-        // Determinista: un reintento no cuenta como un alta más.
-        eventId: `reg_${verificado.id}`,
-        actionSource: "system_generated",
-        userData: {
-          email: verificado.email,
-          externalId: verificado.id,
-          fbp: atribucion.fbp,
-          fbc: atribucion.fbc,
-          clientIp: atribucion.clientIp,
-          clientUserAgent: atribucion.clientUserAgent,
-        },
-      });
+      await reportarAlta(verificado, atribucionDeRequest(request));
     },
     async sendVerificationEmail({ user, url }) {
       await getTransport().send({
@@ -179,10 +205,14 @@ Si no has creado esta cuenta, ignora este mensaje.
         // quien confirmaba el email desde otro dispositivo generaba un
         // `CompleteRegistration` sin atribuir a ningún anuncio.
         async after(creado, context) {
-          await guardarAtribucion(
-            creado.id,
-            atribucionDeHeaders(context?.headers ?? context?.request?.headers),
+          const atribucion = atribucionDeHeaders(
+            context?.headers ?? context?.request?.headers,
           );
+          await guardarAtribucion(creado.id, atribucion);
+          // Google entrega el email ya verificado: no habrá enlace de
+          // activación ni `afterEmailVerification`, así que el alta se reporta
+          // aquí o no se reporta nunca.
+          if (creado.emailVerified) await reportarAlta(creado, atribucion);
           // Si este correo ya había pasado por la calculadora, el alta cierra
           // su embudo. Sin esta línea la tabla `leads` diría cuántos correos se
           // capturan pero no cuántos acaban en cuenta, que es lo único que

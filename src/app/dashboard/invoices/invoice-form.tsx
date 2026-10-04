@@ -1,15 +1,40 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createInvoice, type InvoiceFormState } from "./actions";
+import { NUEVO_CLIENTE } from "./nuevo-cliente";
 
 const initial: InvoiceFormState = {};
 
 type ClientOption = { id: string; company: string };
 
-export function InvoiceForm({ clients }: { clients: ClientOption[] }) {
+// Lo que el usuario ya calculó en la calculadora antes de registrarse: volver a
+// teclearlo es fricción justo en el paso que activa la cuenta.
+export type InvoiceDefaults = { amount?: string; dueAt?: string };
+
+export function InvoiceForm({
+  clients,
+  defaults,
+}: {
+  clients: ClientOption[];
+  defaults?: InvoiceDefaults;
+}) {
   const [state, action, pending] = useActionState(createInvoice, initial);
   const formRef = useRef<HTMLFormElement>(null);
+  const sinClientes = clients.length === 0;
+  const [clienteElegido, setClienteElegido] = useState(
+    sinClientes ? NUEVO_CLIENTE : "",
+  );
+  const nuevoCliente = clienteElegido === NUEVO_CLIENTE;
+
+  // Tras crear el cliente en línea, la página se revalida y ya aparece en el
+  // selector: se vuelve a "Selecciona…" para no crear otro igual. Se ajusta en
+  // render, comparando con el último resultado visto, y no en un efecto.
+  const [ultimoResultado, setUltimoResultado] = useState(state);
+  if (state !== ultimoResultado) {
+    setUltimoResultado(state);
+    if (state.ok) setClienteElegido("");
+  }
 
   useEffect(() => {
     if (state.ok) formRef.current?.reset();
@@ -21,24 +46,48 @@ export function InvoiceForm({ clients }: { clients: ClientOption[] }) {
       action={action}
       className="grid gap-4 rounded-xl border border-neutral-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-3 dark:border-neutral-800 dark:bg-neutral-900"
     >
-      <label className="block space-y-1 sm:col-span-2 lg:col-span-1">
-        <span className="text-xs font-medium text-neutral-500">Cliente</span>
-        <select
-          name="clientId"
-          required
-          defaultValue=""
-          className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
-        >
-          <option value="" disabled>
-            Selecciona…
-          </option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.company}
+      {sinClientes ? (
+        <input type="hidden" name="clientId" value={NUEVO_CLIENTE} />
+      ) : (
+        <label className="block space-y-1 sm:col-span-2 lg:col-span-1">
+          <span className="text-xs font-medium text-neutral-500">Cliente</span>
+          <select
+            name="clientId"
+            required
+            value={clienteElegido}
+            onChange={(e) => setClienteElegido(e.target.value)}
+            className="h-9 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-50"
+          >
+            <option value="" disabled>
+              Selecciona…
             </option>
-          ))}
-        </select>
-      </label>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.company}
+              </option>
+            ))}
+            <option value={NUEVO_CLIENTE}>+ Cliente nuevo</option>
+          </select>
+        </label>
+      )}
+
+      {nuevoCliente && (
+        <>
+          <Field
+            label="Cliente"
+            name="company"
+            placeholder="Acme S.L."
+            required
+          />
+          <Field
+            label="Email de facturación del cliente"
+            name="billingEmail"
+            type="email"
+            placeholder="facturacion@acme.com"
+            required
+          />
+        </>
+      )}
 
       <Field label="Nº de factura" name="number" placeholder="2026-014" required />
       <Field
@@ -48,10 +97,17 @@ export function InvoiceForm({ clients }: { clients: ClientOption[] }) {
         step="0.01"
         min="0"
         placeholder="800,00"
+        defaultValue={defaults?.amount}
         required
       />
       <Field label="Fecha de emisión" name="issuedAt" type="date" required />
-      <Field label="Vencimiento" name="dueAt" type="date" required />
+      <Field
+        label="Vencimiento"
+        name="dueAt"
+        type="date"
+        defaultValue={defaults?.dueAt}
+        required
+      />
 
       <label className="block space-y-1 sm:col-span-2">
         <span className="text-xs font-medium text-neutral-500">

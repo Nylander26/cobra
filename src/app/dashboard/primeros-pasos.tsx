@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { clients, invoices } from "@/db/schema";
+import { invoices } from "@/db/schema";
 import { requireSession } from "@/lib/session";
 
 // Puesta en marcha guiada. No es un tour con burbujas encima de la interfaz:
@@ -13,7 +13,7 @@ import { requireSession } from "@/lib/session";
 // que no se puede marcar nunca deja la tarjeta clavada para siempre y enseña a
 // ignorarla — que es justo lo contrario de lo que se busca.
 //
-// Server component: dos `count` contra índices ya existentes. Va en su propio
+// Server component: un `count` contra un índice ya existente. Va en su propio
 // <Suspense> porque lee la sesión.
 
 type Paso = {
@@ -46,16 +46,10 @@ function Marca({ hecho }: { hecho: boolean }) {
 export async function PrimerosPasos() {
   const { user } = await requireSession();
 
-  const [[{ clientesTotal }], [{ facturasTotal }]] = await Promise.all([
-    db
-      .select({ clientesTotal: count() })
-      .from(clients)
-      .where(eq(clients.userId, user.id)),
-    db
-      .select({ facturasTotal: count() })
-      .from(invoices)
-      .where(eq(invoices.userId, user.id)),
-  ]);
+  const [{ facturasTotal }] = await db
+    .select({ facturasTotal: count() })
+    .from(invoices)
+    .where(eq(invoices.userId, user.id));
 
   const pasos: Paso[] = [
     {
@@ -66,17 +60,12 @@ export async function PrimerosPasos() {
       cta: "Reenviar el correo",
       hecho: user.emailVerified,
     },
-    {
-      titulo: "Añade tu primer cliente",
-      texto: "Solo su nombre y el email al que le mandas las facturas.",
-      href: "/dashboard/clients",
-      cta: "Añadir cliente",
-      hecho: clientesTotal > 0,
-    },
+    // Sin paso de "añade un cliente": el formulario de factura lo crea en
+    // línea. Era un paso entero entre el alta y la activación.
     {
       titulo: "Registra tu primera factura",
       texto:
-        "Importe y vencimiento. Cobra programa los recordatorios en ese mismo momento y no para hasta que la marques pagada.",
+        "Cliente, importe y vencimiento. Cobra programa los recordatorios en ese mismo momento y no para hasta que la marques pagada.",
       href: "/dashboard/invoices",
       cta: "Registrar factura",
       hecho: facturasTotal > 0,

@@ -1,11 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { db } from "@/db";
 import { clients, events, invoices } from "@/db/schema";
 import { materializarAvisos } from "@/lib/burofax/avisos";
 import { leerBorrador, marcarReclamado } from "@/lib/burofax/borradores";
 import { newId } from "@/lib/ids";
+import { reportarPrimeraFactura } from "@/lib/meta/primera-factura";
 import { requireSession } from "@/lib/session";
 
 export type ImportarState = { error?: string };
@@ -86,6 +88,8 @@ export async function importarBurofax(
     invoiceId,
     payload: { origen: "burofax", avisosProgramados: avisos },
   });
+
+  after(() => reportarPrimeraFactura(session.user, "burofax"));
 
   // El payload cifrado se borra en el mismo acto: los datos del deudor ya viven
   // dentro de la cuenta como cliente y factura, y esta copia solo es exposición.

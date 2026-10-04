@@ -32,13 +32,14 @@ function authErrorMessage(status: number, fallback?: string): string {
   return fallback ?? "Algo salió mal. Inténtalo de nuevo.";
 }
 
-export function AuthForm({ mode }: { mode: Mode }) {
+// `google` llega del servidor: el botón solo aparece si hay credenciales de
+// OAuth configuradas, para no ofrecer una puerta que da error.
+export function AuthForm({ mode, google = false }: { mode: Mode; google?: boolean }) {
   const t = copy[mode];
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // signup: cuenta creada, esperando el click en el email de verificación.
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const [noCoincide, setNoCoincide] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,14 +50,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
     const password = String(form.get("password"));
     const name = String(form.get("name") ?? "");
 
-    // Una errata en la contraseña del alta no se descubre hasta el siguiente
-    // inicio de sesión, cuando ya no hay forma de saber qué se escribió: se
-    // comprueba aquí, antes de crear nada.
-    if (mode === "signup" && password !== String(form.get("passwordConfirm"))) {
-      setNoCoincide(true);
-      return;
-    }
-
     setPending(true);
 
     const result =
@@ -65,7 +58,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
             email,
             password,
             name,
-            callbackURL: "/dashboard",
+            // Directo al formulario de la primera factura: es la activación
+            // real, y el panel vacío no le dice a nadie qué hacer.
+            callbackURL: "/dashboard/invoices",
           })
         : await authClient.signIn.email({
             email,
@@ -141,6 +136,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
     >
       <h1 className="text-lg font-semibold text-tinta">{t.title}</h1>
 
+      {google && (
+        <>
+          <BotonGoogle />
+          <div className="flex items-center gap-3 text-xs text-grafito/50">
+            <span className="h-px flex-1 bg-linea" />o con tu email
+            <span className="h-px flex-1 bg-linea" />
+          </div>
+        </>
+      )}
+
       {mode === "signup" && (
         <Field
           label="Nombre"
@@ -166,21 +171,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
         minLength={8}
         required
       />
-      {mode === "signup" && (
-        <CampoContrasena
-          label="Repite la contraseña"
-          name="passwordConfirm"
-          autoComplete="new-password"
-          minLength={8}
-          required
-          aria-invalid={noCoincide}
-          aria-describedby={noCoincide ? "password-confirm-error" : undefined}
-          onInput={() => setNoCoincide(false)}
-          error={
-            noCoincide ? "Las dos contraseñas no coinciden." : undefined
-          }
-        />
-      )}
 
       {mode === "login" && (
         <p className="text-right text-sm">
@@ -237,6 +227,36 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </Link>
       </p>
     </form>
+  );
+}
+
+function BotonGoogle() {
+  const [pending, setPending] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={async () => {
+        setPending(true);
+        // Redirige a Google. El email llega ya verificado, así que no hay
+        // correo de activación: entra y va directo a su primera factura.
+        const result = await authClient.signIn.social({
+          provider: "google",
+          callbackURL: "/dashboard",
+          newUserCallbackURL: "/dashboard/invoices",
+        });
+        if (result.error) setPending(false);
+      }}
+      className="flex w-full items-center justify-center gap-2 rounded-lg border border-linea bg-white px-4 py-2 text-sm font-medium text-tinta transition hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobra disabled:opacity-50"
+    >
+      <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+        <path fill="#FBBC05" d="M5.84 14.1A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.34-2.1V7.06H2.18A11 11 0 0 0 1 12c0 1.77.42 3.45 1.18 4.94l3.66-2.84Z" />
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.5 10.5 0 0 0 12 1 11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z" />
+      </svg>
+      {pending ? "…" : "Continuar con Google"}
+    </button>
   );
 }
 

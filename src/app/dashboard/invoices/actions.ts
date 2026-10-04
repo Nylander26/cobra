@@ -2,13 +2,16 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "@/db";
 import { clients, events, invoices, reminders } from "@/db/schema";
 import { getPlanUsage } from "@/lib/billing";
 import { getOrCreateDefaultSequenceSteps } from "@/lib/default-sequence";
 import { markInvoicePaidCore } from "@/lib/invoices/mark-paid";
 import { newId } from "@/lib/ids";
+import { reportarPrimeraFactura } from "@/lib/meta/primera-factura";
 import { parseAmountToCents } from "@/lib/money";
+import { NUEVO_CLIENTE } from "./nuevo-cliente";
 import { requireSession } from "@/lib/session";
 import {
   deletePdf,
@@ -23,6 +26,8 @@ export type InvoiceFormState = { error?: string; ok?: boolean };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function createInvoice(
   _prev: InvoiceFormState,
   formData: FormData,
@@ -35,7 +40,19 @@ export async function createInvoice(
   const issuedRaw = String(formData.get("issuedAt") ?? "");
   const dueRaw = String(formData.get("dueAt") ?? "");
 
+  // Cliente nuevo en el mismo envío: obligar a pasar antes por la página de
+  // clientes era un paso entero del onboarding entre el alta y la primera
+  // factura, que es la activación real.
+  const nuevoCliente = clientId === NUEVO_CLIENTE;
+  const company = String(formData.get("company") ?? "").trim();
+  const billingEmail = String(formData.get("billingEmail") ?? "").trim();
+
   if (!clientId) return { error: "Selecciona un cliente." };
+  if (nuevoCliente) {
+    if (!company) return { error: "Indica el nombre del cliente." };
+    if (!emailRe.test(billingEmail))
+      return { error: "Introduce el email de facturación del cliente." };
+  }
   if (!number) return { error: "El número de factura es obligatorio." };
   if (amountCents === null || amountCents === 0)
     return { error: "Introduce un importe válido." };
@@ -50,12 +67,14 @@ export async function createInvoice(
     return { error: "El vencimiento no puede ser anterior a la emisión." };
 
   // Client must belong to this user.
-  const ownedClient = await db
-    .select({ id: clients.id })
-    .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.userId, user.id)))
-    .limit(1);
-  if (ownedClient.length === 0) return { error: "Cliente no encontrado." };
+  if (!nuevoCliente) {
+    const ownedClient = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.id, clientId), eq(clients.userId, user.id)))
+      .limit(1);
+    if (ownedClient.length === 0) return { error: "Cliente no encontrado." };
+  }
 
   // Plan limit: a new invoice is created "sent" (active), so it counts.
   const usage = await getPlanUsage(user.id);
@@ -88,10 +107,23 @@ export async function createInvoice(
 
   const steps = await getOrCreateDefaultSequenceSteps(user.id);
 
+  // El cliente se crea lo más tarde posible: con todas las validaciones y el
+  // PDF ya pasados, para no dejar clientes huérfanos de un envío fallido.
+  let invoiceClientId = clientId;
+  if (nuevoCliente) {
+    invoiceClientId = newId("cli");
+    await db.insert(clients).values({
+      id: invoiceClientId,
+      userId: user.id,
+      company,
+      billingEmail,
+    });
+  }
+
   await db.insert(invoices).values({
     id: invoiceId,
     userId: user.id,
-    clientId,
+    clientId: invoiceClientId,
     number,
     amountCents,
     currency: "EUR",
@@ -128,7 +160,11 @@ export async function createInvoice(
     payload: { scheduledReminders: dueReminders.length },
   });
 
+  // Después de responder: Meta no puede retrasar la confirmación en pantalla.
+  after(() => reportarPrimeraFactura(user, "dashboard"));
+
   revalidatePath("/dashboard/invoices");
+  if (nuevoCliente) revalidatePath("/dashboard/clients");
   return { ok: true };
 }
 
